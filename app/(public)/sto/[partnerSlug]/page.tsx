@@ -6,6 +6,7 @@ import { PartnerCard } from "@/components/cards/partner-card";
 import { MapView } from "@/components/maps/map-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { demoServices } from "@/lib/data/demo";
 import { getPartnerBySlug, getPartnersByCity } from "@/lib/supabase/queries";
 
 type Props = {
