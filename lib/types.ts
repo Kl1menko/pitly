@@ -42,8 +42,8 @@ export interface Partner {
   verified?: boolean;
   status?: "pending" | "active" | "blocked";
   rating_avg?: number | null;
-  services?: string[];
-  categories?: string[];
+  services?: { id: string; name_ua: string }[];
+  categories?: { id: string; name_ua: string }[];
   brands?: string[];
   delivery_available?: boolean;
 }

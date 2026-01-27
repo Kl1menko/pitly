@@ -4,10 +4,24 @@ import { ArrowUpRight, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { demoPartCategories, demoServices } from "@/lib/data/demo";
 import { type Partner } from "@/lib/types";
 
 export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: string }) {
   const detailHref = partner.type === "sto" ? `/sto/${partner.slug}` : `/shop/${partner.slug}`;
+
+  const serviceLabel = (s: { id: string; name_ua?: string } | string) => {
+    const key = typeof s === "string" ? s : s.id;
+    if (typeof s !== "string" && s?.name_ua) return s.name_ua;
+    return demoServices.find((svc) => svc.slug === key || svc.id === key)?.name_ua ?? key;
+  };
+
+  const categoryLabel = (c: { id: string; name_ua?: string } | string) => {
+    const key = typeof c === "string" ? c : c.id;
+    if (typeof c !== "string" && c?.name_ua) return c.name_ua;
+    return demoPartCategories.find((cat) => cat.slug === key || cat.id === key)?.name_ua ?? key;
+  };
+
   return (
     <Card className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
@@ -30,13 +44,13 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
       <p className="text-sm text-neutral-700 line-clamp-2">{partner.description}</p>
       <div className="flex flex-wrap gap-2">
         {partner.services?.slice(0, 3).map((s) => (
-          <Badge key={s} variant="outline">
-            {s}
+          <Badge key={typeof s === "string" ? s : s.id} variant="outline">
+            {serviceLabel(s)}
           </Badge>
         ))}
         {partner.categories?.slice(0, 3).map((c) => (
-          <Badge key={c} variant="outline">
-            {c}
+          <Badge key={typeof c === "string" ? c : c.id} variant="outline">
+            {categoryLabel(c)}
           </Badge>
         ))}
       </div>

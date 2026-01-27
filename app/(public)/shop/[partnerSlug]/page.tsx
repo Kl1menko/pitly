@@ -44,11 +44,18 @@ export default async function ShopDetailPage({ params }: Props) {
         </div>
         {partner.description && <p className="mt-3 text-neutral-700">{partner.description}</p>}
         <div className="mt-4 flex flex-wrap gap-2">
-          {partner.categories?.map((category) => (
-            <Badge key={category} variant="outline">
-              {category}
-            </Badge>
-          ))}
+          {partner.categories?.map((category) => {
+            const key = typeof category === "string" ? category : category.id;
+            const label =
+              typeof category === "string"
+                ? demoPartCategories.find((c) => c.slug === category || c.id === category)?.name_ua ?? category
+                : category.name_ua ?? category.id;
+            return (
+              <Badge key={key} variant="outline">
+                {label}
+              </Badge>
+            );
+          })}
         </div>
         {partner.delivery_available && (
           <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-sm font-semibold text-neutral-800">

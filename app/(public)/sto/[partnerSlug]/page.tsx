@@ -52,11 +52,18 @@ export default async function StoDetailPage({ params }: Props) {
 
         {partner.services && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {partner.services.map((service) => (
-              <Badge key={service} variant="outline">
-                {service}
-              </Badge>
-            ))}
+            {partner.services.map((service) => {
+              const key = typeof service === "string" ? service : service.id;
+              const label =
+                typeof service === "string"
+                  ? demoServices.find((s) => s.slug === service || s.id === service)?.name_ua ?? service
+                  : service.name_ua ?? service.id;
+              return (
+                <Badge key={key} variant="outline">
+                  {label}
+                </Badge>
+              );
+            })}
           </div>
         )}
       </div>

@@ -37,7 +37,10 @@ export function SearchHero({ cities }: { cities: City[] }) {
         <div className="flex flex-col items-center gap-3">
           <h1 className="w-full text-2xl font-bold leading-tight text-neutral-900 sm:text-3xl md:text-4xl">
             СТО та запчастини по всій Україні —{" "}
-            <span key={phraseIndex} className="flip-text">
+            <span
+              key={phraseIndex}
+              className="flip-text block min-h-[2.6rem] text-center sm:min-h-[2.8rem] md:min-h-[3.2rem]"
+            >
               {phrases[phraseIndex]}
             </span>
           </h1>
@@ -119,11 +122,11 @@ export function SearchHero({ cities }: { cities: City[] }) {
       `}</style>
       <style jsx>{`
         .flip-text {
-          display: inline-block;
+          display: block;
           white-space: normal;
           word-break: break-word;
-          text-align: center;
           animation: flip 0.9s ease;
+          transform-origin: center;
         }
         @keyframes flip {
           0% {

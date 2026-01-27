@@ -104,8 +104,12 @@ export async function getPartnersByCity(params: {
   let partners: Partner[] =
     (data as RawPartner[] | null)?.map((p) => ({
       ...p,
-      services: p.partner_services?.map((s) => s.service_id),
-      categories: p.shop_part_offers?.map((s) => s.category_id),
+      services: p.partner_services?.map(
+        (s) => demoServices.find((svc) => svc.id === s.service_id || svc.slug === s.service_id) || { id: s.service_id, name_ua: s.service_id }
+      ),
+      categories: p.shop_part_offers?.map(
+        (s) => demoPartCategories.find((cat) => cat.id === s.category_id || cat.slug === s.category_id) || { id: s.category_id, name_ua: s.category_id }
+      ),
       brands: p.partner_car_compatibility?.map((c) => c.brand_id),
       delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false
     })) ?? [];
@@ -133,7 +137,15 @@ export async function getPartnersByCity(params: {
 }
 
 export async function getPartnerBySlug(type: PartnerType, slug: string): Promise<Partner | null> {
-  if (!supabaseReady) return demoPartners.find((p) => p.slug === slug && p.type === type) ?? null;
+  if (!supabaseReady) {
+    const p = demoPartners.find((x) => x.slug === slug && x.type === type);
+    if (!p) return null;
+    return {
+      ...p,
+      services: p.services?.map((s) => demoServices.find((svc) => svc.slug === s) || { id: s, name_ua: s }),
+      categories: p.categories?.map((c) => demoPartCategories.find((cat) => cat.slug === c) || { id: c, name_ua: c })
+    };
+  }
 
   const supabase = getSupabaseServerClient();
   const { data, error } = await supabase
@@ -152,10 +164,12 @@ export async function getPartnerBySlug(type: PartnerType, slug: string): Promise
   }
   return {
     ...data,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    services: data.partner_services?.map((s: any) => s.service_id),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    categories: data.shop_part_offers?.map((s: any) => s.category_id),
+    services: data.partner_services
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ?.map((s: any) => demoServices.find((svc) => svc.id === s.service_id) || { id: s.service_id, name_ua: s.service_id }),
+    categories: data.shop_part_offers
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ?.map((s: any) => demoPartCategories.find((cat) => cat.id === s.category_id) || { id: s.category_id, name_ua: s.category_id }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delivery_available: data.shop_part_offers?.some((s: any) => s.delivery_available) ?? false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
