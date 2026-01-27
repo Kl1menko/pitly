@@ -28,8 +28,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
   }, [phrases.length]);
 
   return (
-    <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 overflow-hidden rounded-[28px] border border-neutral-100 bg-gradient-to-r from-[#f5f8ff] via-white to-[#e9f4ff] shadow-md shadow-blue-100/30 px-4 sm:px-6">
-      <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/90 to-white/85" />
+    <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 overflow-hidden rounded-[28px] border border-neutral-200 bg-gradient-to-r from-white via-neutral-50 to-white shadow-md shadow-neutral-200/50 px-4 sm:px-6">
       <div className="relative flex flex-col items-center gap-6 p-5 text-center sm:p-6 md:p-10">
         <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 sm:text-xs">
           платформа Pitly
@@ -50,11 +49,11 @@ export function SearchHero({ cities }: { cities: City[] }) {
         </div>
         <form
           onSubmit={handleSubmit}
-          className="flex w-full max-w-4xl flex-col gap-3 rounded-2xl bg-white p-4 shadow-md ring-1 ring-blue-100 sm:gap-4 sm:p-5 md:flex-row md:items-center"
+          className="flex w-full max-w-4xl flex-col gap-3 rounded-2xl bg-white p-4 shadow-md ring-1 ring-neutral-200 sm:gap-4 sm:p-5 md:flex-row md:items-center"
         >
           <div className="flex flex-1 flex-col gap-3 md:flex-row">
             <CitySelector cities={cities} value={city} onChange={setCity} />
-            <div className="flex h-11 w-full overflow-hidden rounded-xl border border-blue-300 bg-blue-50 text-sm md:w-64">
+            <div className="flex h-11 w-full overflow-hidden rounded-xl border border-neutral-300 bg-neutral-50 text-sm md:w-64">
               <button
                 type="button"
                 onClick={() => setMode("sto")}
@@ -74,7 +73,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
           <Button
             size="lg"
             type="submit"
-            className="w-full shadow-lg shadow-blue-300 transition hover:-translate-y-0.5 hover:shadow-blue-400 md:w-40"
+            className="w-full shadow-lg shadow-neutral-300 transition hover:-translate-y-0.5 hover:shadow-neutral-400 md:w-40"
           >
             Знайти
           </Button>
