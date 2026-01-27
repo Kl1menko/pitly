@@ -80,6 +80,16 @@ export const demoBrands: CarBrand[] = [
   { id: "brand-dacia", name: "Dacia", slug: "dacia" }
 ];
 
+const mapService = (slug: string) => {
+  const svc = demoServices.find((s) => s.slug === slug);
+  return svc ? { id: svc.id, name_ua: svc.name_ua } : { id: slug, name_ua: slug };
+};
+
+const mapCategory = (slug: string) => {
+  const cat = demoPartCategories.find((c) => c.slug === slug);
+  return cat ? { id: cat.id, name_ua: cat.name_ua } : { id: slug, name_ua: slug };
+};
+
 export const demoPartners: Partner[] = [
   {
     id: "partner-sto-1",
@@ -95,7 +105,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.8,
-    services: ["khodova", "diagnostyka", "zamina-masla", "halma"],
+    services: [mapService("khodova"), mapService("diagnostyka"), mapService("zamina-masla"), mapService("halma")],
     brands: ["toyota", "volkswagen", "honda"]
   },
   {
@@ -110,7 +120,7 @@ export const demoPartners: Partner[] = [
     verified: false,
     status: "active",
     rating_avg: 4.5,
-    services: ["diagnostyka", "khodova"],
+    services: [mapService("diagnostyka"), mapService("khodova")],
     brands: ["bmw", "volkswagen"]
   },
   {
@@ -125,7 +135,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.6,
-    services: ["halma", "kondytsionery", "shynomontazh"],
+    services: [mapService("halma"), mapService("kondytsionery"), mapService("shynomontazh")],
     brands: ["nissan", "hyundai", "kia"]
   },
   {
@@ -140,7 +150,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.7,
-    categories: ["dvyhun", "halmivna-systema"],
+    categories: [mapCategory("dvyhun"), mapCategory("halmivna-systema")],
     delivery_available: true,
     brands: ["toyota", "volkswagen"]
   },
@@ -156,7 +166,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.5,
-    categories: ["filtry", "masla-ta-ridyny", "pidviska"],
+    categories: [mapCategory("filtry"), mapCategory("masla-ta-ridyny"), mapCategory("pidviska")],
     delivery_available: true,
     brands: ["renault", "skoda", "ford"]
   },
@@ -172,7 +182,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.4,
-    services: ["elektryka", "shynomontazh", "rozval-shodzhennia"],
+    services: [mapService("elektryka"), mapService("shynomontazh"), mapService("rozval-shodzhennia")],
     brands: ["kia", "hyundai", "nissan"]
   },
   {
@@ -187,7 +197,7 @@ export const demoPartners: Partner[] = [
     verified: false,
     status: "active",
     rating_avg: 4.3,
-    services: ["kuzovni-roboty", "halma", "kondytsionery"],
+    services: [mapService("kuzovni-roboty"), mapService("halma"), mapService("kondytsionery")],
     brands: ["toyota", "volkswagen", "mazda"]
   },
   {
@@ -202,7 +212,7 @@ export const demoPartners: Partner[] = [
     verified: true,
     status: "active",
     rating_avg: 4.6,
-    categories: ["okholodzhennia", "elektryka-detal", "filtry"],
+    categories: [mapCategory("okholodzhennia"), mapCategory("elektryka-detal"), mapCategory("filtry")],
     delivery_available: true,
     brands: ["hyundai", "kia", "nissan"]
   },
@@ -218,7 +228,7 @@ export const demoPartners: Partner[] = [
     verified: false,
     status: "active",
     rating_avg: 4.2,
-    categories: ["shyny-dysky", "pidviska", "kuzov"],
+    categories: [mapCategory("shyny-dysky"), mapCategory("pidviska"), mapCategory("kuzov")],
     delivery_available: false,
     brands: ["mercedes-benz", "bmw", "audi"]
   }
