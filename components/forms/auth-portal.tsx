@@ -5,9 +5,11 @@ import { AuthMultichannel } from "@/components/forms/auth-multichannel";
 import { cn } from "@/lib/utils";
 
 type Mode = "login" | "register";
+type Role = "client" | "partner_sto" | "partner_shop";
 
-export function AuthPortal({ defaultMode = "login" }: { defaultMode?: Mode }) {
+export function AuthPortal({ defaultMode = "login", defaultRole = "client" }: { defaultMode?: Mode; defaultRole?: Role }) {
   const [mode, setMode] = useState<Mode>(defaultMode);
+  const role: Role = defaultRole ?? "client";
 
   return (
     <div className="space-y-5">
@@ -26,7 +28,7 @@ export function AuthPortal({ defaultMode = "login" }: { defaultMode?: Mode }) {
         ))}
       </div>
 
-      <AuthMultichannel mode={mode} role="client" />
+      <AuthMultichannel mode={mode} role={role} />
     </div>
   );
 }
