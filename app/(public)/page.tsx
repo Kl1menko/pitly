@@ -65,12 +65,12 @@ export default async function HomePage() {
       <SearchHero cities={cities} />
 
       <section className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8 md:grid-cols-[1.4fr_1fr] md:items-center">
-        <div>
-          <h1 className="mt-2 text-3xl font-bold leading-tight text-neutral-900">
+        <div className="text-center md:text-left">
+          <h1 className="mt-2 text-4xl font-bold leading-tight text-neutral-900 sm:text-5xl">
             Знаходьте перевірені СТО та автозапчастини у вашому місті — швидко
             та без дзвінків
           </h1>
-          <p className="mt-3 text-lg text-neutral-700">
+          <p className="mt-4 text-lg leading-relaxed text-neutral-700 sm:text-xl">
             Pitly об’єднує автосервіси та магазини в одному місці, щоб ви
             отримували найкращі пропозиції за кілька хвилин.
           </p>
