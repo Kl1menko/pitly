@@ -14,6 +14,21 @@ export const metadata: Metadata = {
   title: "Pitly — СТО та запчастини по Україні",
   description: "Pitly допомагає знайти СТО та магазини автозапчастин по містах України. Подайте заявку на ремонт чи підбір деталей онлайн.",
   metadataBase: new URL(process.env.SITE_URL || "http://localhost:3000"),
+  manifest: "/images/icons/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/images/icons/favicon.ico", sizes: "32x32" },
+      { url: "/images/icons/favicon-96x96.png", sizes: "96x96" },
+      { url: "/images/icons/favicon.svg", type: "image/svg+xml" }
+    ],
+    apple: "/images/icons/apple-touch-icon.png",
+    shortcut: "/images/icons/favicon.ico",
+    other: [
+      { rel: "mask-icon", url: "/images/icons/favicon.svg", color: "#111827" },
+      { rel: "manifest", url: "/images/icons/site.webmanifest" }
+    ]
+  },
+  themeColor: "#111827",
   openGraph: {
     title: "Pitly",
     description: "Каталог СТО та магазинів автозапчастин по Україні",

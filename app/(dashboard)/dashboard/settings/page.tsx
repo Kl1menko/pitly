@@ -7,7 +7,7 @@ export default function DashboardSettingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-semibold text-primary">Налаштування</p>
+        <p className="text-sm font-semibold text-neutral-900">Налаштування</p>
         <h1 className="text-2xl font-bold">Сповіщення та доступ</h1>
         <p className="text-neutral-600">У продакшн: вмикаємо webhooks/email через Supabase.</p>
       </div>

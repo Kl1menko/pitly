@@ -29,12 +29,14 @@ export function RequestPartsForm({
   const router = useRouter();
   const params = useSearchParams();
   const cityParam = params.get("city") ?? "";
+  const partnerParam = params.get("partner") ?? "";
   const form = useForm<FormValues>({
     resolver: zodResolver(partsRequestSchema),
     defaultValues: {
       city_id: cityParam ? cities.find((c) => c.slug === cityParam)?.id ?? "" : "",
       part_query: "",
-      contact_phone: ""
+      contact_phone: "",
+      target_partner_id: partnerParam || ""
     }
   });
 
@@ -51,6 +53,7 @@ export function RequestPartsForm({
         part_query: values.part_query,
         contact_phone: values.contact_phone,
         contact_name: values.contact_name,
+        target_partner_id: values.target_partner_id || null,
         status: "new"
       });
       if (error) throw error;

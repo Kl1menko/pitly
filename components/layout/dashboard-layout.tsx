@@ -9,6 +9,7 @@ const links = [
   { href: "/dashboard", label: "Огляд" },
   { href: "/dashboard/profile", label: "Профіль партнера" },
   { href: "/dashboard/requests", label: "Мої заявки" },
+  { href: "/dashboard/admin", label: "Адмін-модерація" },
   { href: "/dashboard/settings", label: "Налаштування" }
 ];
 

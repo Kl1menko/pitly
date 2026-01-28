@@ -173,13 +173,92 @@ create table if not exists public.requests (
   contact_phone text not null,
   contact_name text,
   preferred_time text,
-  status text not null default 'new' check (status in ('new','in_review','sent_to_partners','closed','cancelled')),
+  status text not null default 'draft' check (
+    status in (
+      'draft',
+      'published',
+      'offers_collecting',
+      'client_selected_offer',
+      'in_progress',
+      'done',
+      'cancelled',
+      'expired'
+    )
+  ),
+  target_partner_id uuid references public.partners(id),
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
 create index if not exists requests_type_city_status_idx on public.requests(type, city_id, status);
 create index if not exists requests_client_profile_idx on public.requests(client_profile_id);
+create index if not exists requests_target_partner_idx on public.requests(target_partner_id);
+
+-- 3.2 Offers (пропозиції від партнерів)
+create table if not exists public.offers (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests(id) on delete cascade,
+  partner_id uuid not null references public.partners(id),
+  price numeric,
+  eta_days int2,
+  note text,
+  status text not null default 'sent' check (status in ('sent','viewed','accepted','rejected','expired')),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists offers_request_idx on public.offers(request_id);
+create index if not exists offers_partner_status_idx on public.offers(partner_id, status);
+
+-- 3.3 Orders (угоди після вибору оффера)
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests(id) on delete cascade,
+  offer_id uuid not null references public.offers(id),
+  client_id uuid not null references public.profiles(id),
+  partner_id uuid not null references public.partners(id),
+  status text not null default 'created' check (
+    status in ('created','confirmed','in_progress','fulfilled','closed','cancelled','refund_requested','refunded')
+  ),
+  scheduled_at timestamptz,
+  closed_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists orders_request_idx on public.orders(request_id);
+create index if not exists orders_partner_status_idx on public.orders(partner_id, status);
+create index if not exists orders_client_idx on public.orders(client_id);
+
+-- 3.4 Messages (чат у рамках заявки)
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests(id) on delete cascade,
+  sender_id uuid not null references public.profiles(id),
+  body text not null,
+  attachments jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists messages_request_idx on public.messages(request_id);
+create index if not exists messages_sender_idx on public.messages(sender_id);
+
+-- 3.5 Complaints/Скарги
+create table if not exists public.complaints (
+  id uuid primary key default gen_random_uuid(),
+  actor_profile_id uuid not null references public.profiles(id),
+  target_partner_id uuid references public.partners(id),
+  request_id uuid references public.requests(id),
+  order_id uuid references public.orders(id),
+  complaint_type text not null,
+  message text not null,
+  status text not null default 'new' check (status in ('new','in_review','resolved','rejected')),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists complaints_status_idx on public.complaints(status);
+create index if not exists complaints_actor_idx on public.complaints(actor_profile_id);
 
 -- 4 Reviews
 create table if not exists public.reviews (
@@ -195,6 +274,57 @@ create table if not exists public.reviews (
 
 create index if not exists reviews_partner_idx on public.reviews(partner_id);
 create index if not exists reviews_status_idx on public.reviews(status);
+
+-- Функція: коли оффер прийнято — відхиляємо інші, ставимо заявку в client_selected_offer, створюємо order
+create or replace function public.on_offer_status_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status = 'accepted' then
+    update public.offers
+      set status = 'rejected',
+          updated_at = timezone('utc', now())
+      where request_id = new.request_id
+        and id <> new.id
+        and status in ('sent','viewed');
+
+    update public.requests
+      set status = 'client_selected_offer',
+          updated_at = timezone('utc', now())
+      where id = new.request_id
+        and status in ('published','offers_collecting','in_progress','draft');
+
+    insert into public.orders (request_id, offer_id, client_id, partner_id)
+    select r.id, new.id, r.client_profile_id, new.partner_id
+    from public.requests r
+    where r.id = new.request_id
+    on conflict do nothing;
+  end if;
+  return new;
+end;
+$$;
+
+-- Функція: коли статус order стає fulfilled/closed → заявка done; cancelled → cancelled
+create or replace function public.on_order_status_change()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status in ('fulfilled','closed') then
+    update public.requests
+      set status = 'done',
+          updated_at = timezone('utc', now())
+      where id = new.request_id;
+  elsif new.status = 'cancelled' then
+    update public.requests
+      set status = 'cancelled',
+          updated_at = timezone('utc', now())
+      where id = new.request_id;
+  end if;
+  return new;
+end;
+$$;
 
 -- updated_at тригери
 do $$
@@ -234,6 +364,24 @@ begin
     create trigger set_updated_at_reviews before update on public.reviews
     for each row execute function public.set_updated_at();
   end if;
+
+  perform 1 from pg_trigger where tgname = 'set_updated_at_offers';
+  if not found then
+    create trigger set_updated_at_offers before update on public.offers
+    for each row execute function public.set_updated_at();
+  end if;
+
+  perform 1 from pg_trigger where tgname = 'set_updated_at_orders';
+  if not found then
+    create trigger set_updated_at_orders before update on public.orders
+    for each row execute function public.set_updated_at();
+  end if;
+
+  perform 1 from pg_trigger where tgname = 'set_updated_at_complaints';
+  if not found then
+    create trigger set_updated_at_complaints before update on public.complaints
+    for each row execute function public.set_updated_at();
+  end if;
 end $$;
 
 -- Тригери для рейтингу
@@ -244,6 +392,28 @@ begin
     create trigger refresh_partner_rating_after_review
     after insert or update or delete on public.reviews
     for each row execute function public.refresh_partner_rating();
+  end if;
+end $$;
+
+-- Тригери статусів оффер/ордер
+do $$
+begin
+  perform 1 from pg_trigger where tgname = 'on_offer_status_change_trg';
+  if not found then
+    create trigger on_offer_status_change_trg
+    after update on public.offers
+    for each row
+    when (old.status is distinct from new.status and new.status = 'accepted')
+    execute function public.on_offer_status_change();
+  end if;
+
+  perform 1 from pg_trigger where tgname = 'on_order_status_change_trg';
+  if not found then
+    create trigger on_order_status_change_trg
+    after update on public.orders
+    for each row
+    when (old.status is distinct from new.status)
+    execute function public.on_order_status_change();
   end if;
 end $$;
 
@@ -387,6 +557,10 @@ alter table public.partner_car_compatibility enable row level security;
 alter table public.shop_part_offers enable row level security;
 alter table public.requests enable row level security;
 alter table public.reviews enable row level security;
+alter table public.offers enable row level security;
+alter table public.orders enable row level security;
+alter table public.messages enable row level security;
+alter table public.complaints enable row level security;
 
 -- Публічне читання довідників
 create policy if not exists cities_public_select on public.cities
@@ -524,6 +698,101 @@ create policy if not exists shop_part_offers_owner_all on public.shop_part_offer
   );
 
 create policy if not exists shop_part_offers_admin_all on public.shop_part_offers
+  using (is_admin())
+  with check (is_admin());
+
+-- Offers: партнери та клієнт заявки + адмін
+create policy if not exists offers_partner_all on public.offers
+  using (
+    exists (
+      select 1 from public.partners p
+      where p.id = offers.partner_id and p.owner_profile_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.partners p
+      where p.id = offers.partner_id and p.owner_profile_id = auth.uid()
+    )
+  );
+
+create policy if not exists offers_client_select on public.offers
+  for select using (
+    exists (
+      select 1 from public.requests r
+      where r.id = offers.request_id and r.client_profile_id = auth.uid()
+    )
+  );
+
+create policy if not exists offers_admin_all on public.offers
+  using (is_admin())
+  with check (is_admin());
+
+-- Orders: клієнт та партнер по угоді + адмін
+create policy if not exists orders_client_partner_select on public.orders
+  for select using (
+    client_id = auth.uid()
+    or exists (
+      select 1 from public.partners p where p.id = public.orders.partner_id and p.owner_profile_id = auth.uid()
+    )
+  );
+
+create policy if not exists orders_client_partner_update on public.orders
+  for update using (
+    client_id = auth.uid()
+    or exists (
+      select 1 from public.partners p where p.id = public.orders.partner_id and p.owner_profile_id = auth.uid()
+    )
+  )
+  with check (true);
+
+create policy if not exists orders_admin_all on public.orders
+  using (is_admin())
+  with check (is_admin());
+
+-- Messages: учасники заявки або адмін
+create policy if not exists messages_participants_select on public.messages
+  for select using (
+    exists (
+      select 1 from public.requests r
+      where r.id = messages.request_id
+        and (r.client_profile_id = auth.uid()
+             or exists (
+               select 1 from public.partners p where p.id = any(
+                 array(select partner_id from public.offers o where o.request_id = r.id)
+               ) and p.owner_profile_id = auth.uid()
+             )
+        )
+    )
+  );
+
+create policy if not exists messages_participants_insert on public.messages
+  for insert with check (
+    exists (
+      select 1 from public.requests r
+      where r.id = messages.request_id
+        and (r.client_profile_id = auth.uid()
+             or exists (
+               select 1 from public.partners p where p.id = any(
+                 array(select partner_id from public.offers o where o.request_id = r.id)
+               ) and p.owner_profile_id = auth.uid()
+             )
+        )
+    )
+  );
+
+create policy if not exists messages_admin_all on public.messages
+  using (is_admin())
+  with check (is_admin());
+
+-- Complaints: автор бачить свої, адмін усе
+create policy if not exists complaints_actor_select on public.complaints
+  for select using (actor_profile_id = auth.uid());
+
+create policy if not exists complaints_actor_insert on public.complaints
+  for insert with check (actor_profile_id = auth.uid());
+
+create policy if not exists complaints_admin_all on public.complaints
   using (is_admin())
   with check (is_admin());
 

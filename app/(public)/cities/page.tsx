@@ -6,7 +6,7 @@ import { getCities } from "@/lib/supabase/queries";
 
 export const metadata = {
   title: "Міста України — каталог СТО та магазинів",
-  description: "Оберіть місто, щоб побачити СТО та магазини запчастин. CTO Hub працює у всіх обласних центрах."
+  description: "Оберіть місто, щоб побачити СТО та магазини запчастин. Pitly працює у всіх обласних центрах."
 };
 
 export default async function CitiesPage() {

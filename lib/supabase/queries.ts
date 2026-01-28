@@ -142,8 +142,16 @@ export async function getPartnerBySlug(type: PartnerType, slug: string): Promise
     if (!p) return null;
     return {
       ...p,
-      services: p.services?.map((s) => demoServices.find((svc) => svc.slug === s) || { id: s, name_ua: s }),
-      categories: p.categories?.map((c) => demoPartCategories.find((cat) => cat.slug === c) || { id: c, name_ua: c })
+      services: p.services?.map((s) =>
+        typeof s === "string"
+          ? demoServices.find((svc) => svc.slug === s || svc.id === s) || { id: s, name_ua: s }
+          : { id: s.id, name_ua: s.name_ua }
+      ),
+      categories: p.categories?.map((c) =>
+        typeof c === "string"
+          ? demoPartCategories.find((cat) => cat.slug === c || cat.id === c) || { id: c, name_ua: c }
+          : { id: c.id, name_ua: c.name_ua }
+      )
     };
   }
 
@@ -208,6 +216,70 @@ export async function getBrands(): Promise<CarBrand[]> {
     return demoBrands;
   }
   return data ?? demoBrands;
+}
+
+// --- Offers & Orders ---
+
+export async function getOffersByRequest(requestId: string) {
+  if (!supabaseReady) return [];
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.from("offers").select("*").eq("request_id", requestId);
+  if (error) {
+    console.warn("Supabase getOffersByRequest error", error);
+    return [];
+  }
+  return data ?? [];
+}
+
+export async function createOffer(payload: {
+  request_id: string;
+  partner_id: string;
+  price?: number;
+  eta_days?: number;
+  note?: string;
+}) {
+  if (!supabaseReady) {
+    console.log("Mock createOffer", payload);
+    return { ok: true };
+  }
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from("offers").insert({
+    ...payload,
+    status: "sent"
+  });
+  if (error) {
+    console.warn("Supabase createOffer error", error);
+    return { ok: false, error };
+  }
+  return { ok: true };
+}
+
+export async function selectOffer(offerId: string) {
+  if (!supabaseReady) {
+    console.log("Mock selectOffer", offerId);
+    return { ok: true };
+  }
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from("offers").update({ status: "accepted" }).eq("id", offerId);
+  if (error) {
+    console.warn("Supabase selectOffer error", error);
+    return { ok: false, error };
+  }
+  return { ok: true };
+}
+
+export async function updateOrderStatus(orderId: string, status: string) {
+  if (!supabaseReady) {
+    console.log("Mock updateOrderStatus", orderId, status);
+    return { ok: true };
+  }
+  const supabase = getSupabaseServerClient();
+  const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+  if (error) {
+    console.warn("Supabase updateOrderStatus error", error);
+    return { ok: false, error };
+  }
+  return { ok: true };
 }
 
 export async function createRequestRepair(payload: RepairRequestPayload) {

@@ -8,6 +8,7 @@ export const repairRequestSchema = z.object({
   service_id: z.string().optional(),
   problem_description: z.string().min(10, "Опишіть проблему детальніше").max(1000),
   photos: z.any().optional(),
+  target_partner_id: z.string().optional(),
   contact_phone: z.string().min(6, "Вкажіть телефон"),
   contact_name: z.string().optional()
 });
@@ -20,6 +21,7 @@ export const partsRequestSchema = z.object({
   part_category_id: z.string().min(1, "Оберіть категорію"),
   part_query: z.string().min(3, "Деталі про запчастину"),
   delivery_needed: z.boolean().optional(),
+  target_partner_id: z.string().optional(),
   contact_phone: z.string().min(6, "Вкажіть телефон"),
   contact_name: z.string().optional()
 });

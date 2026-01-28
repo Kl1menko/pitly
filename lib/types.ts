@@ -70,3 +70,58 @@ export interface PartsRequestPayload extends RequestPayloadBase {
   part_query: string;
   delivery_needed?: boolean;
 }
+
+export type OfferStatus = "sent" | "viewed" | "accepted" | "rejected" | "expired";
+export interface Offer {
+  id: string;
+  request_id: string;
+  partner_id: string;
+  price?: number | null;
+  eta_days?: number | null;
+  note?: string | null;
+  status: OfferStatus;
+  created_at?: string;
+}
+
+export type OrderStatus =
+  | "created"
+  | "confirmed"
+  | "in_progress"
+  | "fulfilled"
+  | "closed"
+  | "cancelled"
+  | "refund_requested"
+  | "refunded";
+
+export interface Order {
+  id: string;
+  request_id: string;
+  offer_id: string;
+  client_id: string;
+  partner_id: string;
+  status: OrderStatus;
+  scheduled_at?: string | null;
+  closed_at?: string | null;
+  created_at?: string;
+}
+
+export interface Message {
+  id: string;
+  request_id: string;
+  sender_id: string;
+  body: string;
+  attachments?: unknown[];
+  created_at?: string;
+}
+
+export interface Complaint {
+  id: string;
+  actor_profile_id: string;
+  target_partner_id?: string | null;
+  request_id?: string | null;
+  order_id?: string | null;
+  complaint_type: string;
+  message: string;
+  status: "new" | "in_review" | "resolved" | "rejected";
+  created_at?: string;
+}

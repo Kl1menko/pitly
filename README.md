@@ -1,4 +1,4 @@
-# CTO Hub (Next.js + Supabase)
+# Pitly (Next.js + Supabase)
 
 Публічний каталог СТО та магазинів запчастин із заявками, базовим SEO та кабінетом. Стек: Next.js 14 (App Router), TypeScript, Tailwind + shadcn-style UI, Supabase JS, React Query, Zod, React Hook Form, Leaflet.
 

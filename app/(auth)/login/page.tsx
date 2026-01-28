@@ -1,9 +1,9 @@
-import { AuthPhoneOTP } from "@/components/forms/auth-phone-otp";
+import { AuthPortal } from "@/components/forms/auth-portal";
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
   title: "Вхід у кабінет",
-  description: "Увійдіть за номером телефону через OTP."
+  description: "Увійдіть за email/паролем, телефоном або Google."
 };
 
 export default function LoginPage() {
@@ -12,10 +12,10 @@ export default function LoginPage() {
       <div className="mb-4 space-y-2 text-center">
         <p className="text-sm font-semibold text-primary">Кабінет</p>
         <h1 className="text-3xl font-bold">Вхід</h1>
-        <p className="text-neutral-600">Отримайте одноразовий код у SMS.</p>
+        <p className="text-neutral-600">Email + пароль, телефон з OTP або Google.</p>
       </div>
       <Card>
-        <AuthPhoneOTP />
+        <AuthPortal defaultMode="login" defaultRole="client" />
       </Card>
     </div>
   );

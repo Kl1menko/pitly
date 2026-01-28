@@ -11,7 +11,11 @@ export function SearchHero({ cities }: { cities: City[] }) {
   const router = useRouter();
   const [city, setCity] = useState<string>("");
   const [mode, setMode] = useState<"sto" | "shops">("sto");
-  const phrases = ["сервіс у кілька кліків", "знайдіть і замовте за хвилину", "усе для авто — швидко й зручно"];
+  const phrases = [
+    "усе просто — у кілька кліків",
+    "знайдіть і замовте за хвилину",
+    "усе для авто — швидко й зручно",
+  ];
   const [phraseIndex, setPhraseIndex] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -30,7 +34,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
   return (
     <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 overflow-hidden rounded-[28px] border border-neutral-200 bg-gradient-to-r from-white via-neutral-50 to-white shadow-md shadow-neutral-200/50 px-4 sm:px-6">
       <div className="relative flex flex-col items-center gap-6 p-5 text-center sm:p-6 md:p-10">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-[11px] font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 sm:text-xs">
+        <div className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm ring-1 ring-neutral-900/30 sm:text-xs">
           платформа Pitly
         </div>
         <div className="flex flex-col items-center gap-3">
@@ -44,7 +48,8 @@ export function SearchHero({ cities }: { cities: City[] }) {
             </span>
           </h1>
           <p className="max-w-3xl text-base text-neutral-700 sm:text-lg">
-            Обирай перевірені сервісні станції та магазини автозапчастин. Залишай заявку — ми передамо її партнерам.
+            Обирай перевірені сервісні станції та магазини автозапчастин.
+            Залишай заявку — ми передамо її партнерам.
           </p>
         </div>
         <form
@@ -78,47 +83,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
             Знайти
           </Button>
         </form>
-        <div className="grid w-full max-w-5xl gap-3 text-sm text-neutral-700 sm:grid-cols-2 md:grid-cols-3">
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-blue-100">
-            <p className="font-semibold text-neutral-900">1. Оберіть місто</p>
-            <p className="text-neutral-600">Маємо всі обласні центри. Додамо більше на вимогу.</p>
-          </div>
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-blue-100">
-            <p className="font-semibold text-neutral-900">2. Фільтри по послугах</p>
-            <p className="text-neutral-600">Ходова, діагностика, шини — шукайте потрібне одразу.</p>
-          </div>
-          <div className="rounded-2xl bg-white p-4 ring-1 ring-blue-100">
-            <p className="font-semibold text-neutral-900">3. Залишайте заявку</p>
-            <p className="text-neutral-600">Партнери отримують запит і дзвонять вам напряму.</p>
-          </div>
-        </div>
       </div>
-      <style jsx>{`
-        .typing-text {
-          display: inline-block;
-          white-space: nowrap;
-          overflow: hidden;
-          width: var(--typing-length, 28ch);
-          min-width: var(--typing-length, 28ch);
-          animation: typing 5s ease-in-out infinite alternate;
-        }
-        @keyframes typing {
-          from {
-            clip-path: inset(0 100% 0 0);
-          }
-          to {
-            clip-path: inset(0 0 0 0);
-          }
-        }
-        @media (max-width: 768px) {
-          :root {
-            --typing-length: 22ch;
-          }
-          .grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
       <style jsx>{`
         .flip-text {
           display: block;
@@ -145,9 +110,6 @@ export function SearchHero({ cities }: { cities: City[] }) {
           h1 {
             font-size: 1.65rem;
             line-height: 2.1rem;
-          }
-          .grid {
-            grid-template-columns: 1fr;
           }
         }
       `}</style>

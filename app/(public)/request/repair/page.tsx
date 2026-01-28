@@ -14,13 +14,26 @@ export default async function RequestRepairPage() {
   const [cities, services, brands] = await Promise.all([getCities(), getServices(), getBrands()]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4">
-      <div className="mb-4 space-y-2">
-        <p className="text-sm font-semibold text-primary">Заявка</p>
-        <h1 className="text-3xl font-bold">Ремонт авто</h1>
-        <p className="text-neutral-600">Ми надішлемо заявку партнерам у вибраному місті.</p>
+    <div className="mx-auto max-w-5xl px-4">
+      <div className="mb-6 flex flex-col gap-4 overflow-hidden rounded-3xl bg-neutral-900 p-6 text-white md:flex-row md:items-center md:gap-8">
+        <div className="space-y-2 md:w-1/2">
+          <p className="text-sm font-semibold uppercase tracking-wide text-white/70">Заявка</p>
+          <h1 className="text-3xl font-bold">Ремонт авто</h1>
+          <p className="text-white/80">Опишіть симптоми та додайте фото — ми передамо заявку перевіреним СТО.</p>
+        </div>
+        <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-neutral-800 md:h-56 md:w-1/2">
+          <video
+            src="/videos/video_repair.mp4"
+            className="absolute inset-0 h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-neutral-900/60 via-neutral-900/30 to-transparent" />
+        </div>
       </div>
-      <Card>
+      <Card className="p-4 sm:p-6">
         <RequestRepairForm cities={cities} services={services} brands={brands} />
       </Card>
     </div>

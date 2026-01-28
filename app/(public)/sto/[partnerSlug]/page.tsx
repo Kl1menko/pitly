@@ -6,6 +6,7 @@ import { PartnerCard } from "@/components/cards/partner-card";
 import { MapView } from "@/components/maps/map-view";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { demoServices } from "@/lib/data/demo";
 import { getPartnerBySlug, getPartnersByCity } from "@/lib/supabase/queries";
 
@@ -45,9 +46,16 @@ export default async function StoDetailPage({ params }: Props) {
               </p>
             )}
           </div>
-          <Button asChild size="lg">
-            <Link href={`/request/repair?partner=${partner.slug}`}>Залишити заявку</Link>
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            {partner.rating_avg ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                ⭐ {partner.rating_avg.toFixed(1)} ({partner.rating_count ?? 0})
+              </span>
+            ) : null}
+            <Button asChild size="lg">
+              <Link href={`/request/repair?partner=${partner.id}&city=${partner.city_id}`}>Залишити заявку</Link>
+            </Button>
+          </div>
         </div>
         {partner.description && <p className="mt-3 text-neutral-700">{partner.description}</p>}
 
@@ -69,7 +77,13 @@ export default async function StoDetailPage({ params }: Props) {
         )}
       </div>
 
-      <MapView lat={partner.lat ?? undefined} lng={partner.lng ?? undefined} label={partner.name} />
+      <Card className="p-4">
+        {partner.lat && partner.lng ? (
+          <MapView lat={partner.lat} lng={partner.lng} label={partner.name} />
+        ) : (
+          <p className="text-sm text-neutral-600">Координати відсутні</p>
+        )}
+      </Card>
 
       {others.length > 1 && (
         <div className="space-y-3">

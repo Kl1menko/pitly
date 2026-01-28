@@ -32,11 +32,13 @@ export function RequestRepairForm({
   const router = useRouter();
   const params = useSearchParams();
   const cityParam = params.get("city") ?? "";
+  const partnerParam = params.get("partner") ?? "";
   const [uploading, setUploading] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(repairRequestSchema),
     defaultValues: {
       city_id: cityParam ? cities.find((c) => c.slug === cityParam)?.id ?? "" : "",
+      target_partner_id: partnerParam || "",
       problem_description: "",
       photos: [],
       contact_phone: ""
@@ -64,6 +66,7 @@ export function RequestRepairForm({
         photos: photoUrls,
         contact_phone: values.contact_phone,
         contact_name: values.contact_name,
+        target_partner_id: values.target_partner_id || null,
         status: "new"
       });
 

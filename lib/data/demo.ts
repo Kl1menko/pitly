@@ -1,4 +1,5 @@
 import { type CarBrand, type City, type PartCategory, type Partner, type Service } from "@/lib/types";
+import { type Offer, type Order } from "@/lib/types";
 
 export const demoCities: City[] = [
   { id: "city-kyiv", name_ua: "Київ", slug: "kyiv", region_ua: "Київська", lat: 50.4501, lng: 30.5234 },
@@ -231,5 +232,79 @@ export const demoPartners: Partner[] = [
     categories: [mapCategory("shyny-dysky"), mapCategory("pidviska"), mapCategory("kuzov")],
     delivery_available: false,
     brands: ["mercedes-benz", "bmw", "audi"]
+  }
+];
+
+export const demoRequests = [
+  {
+    id: "req-1",
+    client_profile_id: "client-1",
+    type: "repair",
+    city_id: "city-kyiv",
+    problem_description: "Стукіт у підвісці, тягне вправо",
+    status: "offers_collecting",
+    car_brand_id: "brand-toyota",
+    car_model_id: null,
+    car_year: 2015,
+    created_at: new Date().toISOString()
+  },
+  {
+    id: "req-2",
+    client_profile_id: "client-1",
+    type: "parts",
+    city_id: "city-kyiv",
+    part_category_id: "cat-halmivna-systema",
+    part_query: "колодки передні Toyota Corolla",
+    status: "client_selected_offer",
+    created_at: new Date().toISOString()
+  }
+];
+
+export const demoOffers: Offer[] = [
+  {
+    id: "offer-1",
+    request_id: "req-1",
+    partner_id: "partner-sto-1",
+    price: 3200,
+    eta_days: 1,
+    note: "Діагностика + заміна стійок стабілізатора",
+    status: "sent"
+  },
+  {
+    id: "offer-2",
+    request_id: "req-1",
+    partner_id: "partner-sto-4",
+    price: 2800,
+    eta_days: 2,
+    note: "Перевірка ходової, ціна включає роботу",
+    status: "accepted"
+  },
+  {
+    id: "offer-3",
+    request_id: "req-2",
+    partner_id: "partner-shop-1",
+    price: 2100,
+    eta_days: 1,
+    note: "Textar, є на складі",
+    status: "accepted"
+  }
+];
+
+export const demoOrders: Order[] = [
+  {
+    id: "order-1",
+    request_id: "req-1",
+    offer_id: "offer-2",
+    client_id: "client-1",
+    partner_id: "partner-sto-4",
+    status: "in_progress"
+  },
+  {
+    id: "order-2",
+    request_id: "req-2",
+    offer_id: "offer-3",
+    client_id: "client-1",
+    partner_id: "partner-shop-1",
+    status: "fulfilled"
   }
 ];

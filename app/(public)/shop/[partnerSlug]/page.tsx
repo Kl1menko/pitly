@@ -39,9 +39,16 @@ export default async function ShopDetailPage({ params }: Props) {
               {partner.address}
             </p>
           </div>
-          <Button asChild size="lg">
-            <Link href={`/request/parts?partner=${partner.slug}`}>Запросити деталь</Link>
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            {partner.rating_avg ? (
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+                ⭐ {partner.rating_avg.toFixed(1)} ({partner.rating_count ?? 0})
+              </span>
+            ) : null}
+            <Button asChild size="lg">
+              <Link href={`/request/parts?partner=${partner.id}&city=${partner.city_id}`}>Запросити деталь</Link>
+            </Button>
+          </div>
         </div>
         {partner.description && <p className="mt-3 text-neutral-700">{partner.description}</p>}
         <div className="mt-4 flex flex-wrap gap-2">

@@ -1,9 +1,9 @@
-import { AuthPhoneOTP } from "@/components/forms/auth-phone-otp";
+import { AuthPortal } from "@/components/forms/auth-portal";
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
   title: "Реєстрація партнера або клієнта",
-  description: "Зареєструйтесь за телефоном, підтвердіть OTP і заповніть профіль."
+  description: "Зареєструйтесь через email/пароль, телефон (OTP) або Google і заповніть профіль."
 };
 
 export default function RegisterPage() {
@@ -12,10 +12,10 @@ export default function RegisterPage() {
       <div className="mb-4 space-y-2 text-center">
         <p className="text-sm font-semibold text-primary">Реєстрація</p>
         <h1 className="text-3xl font-bold">Створити акаунт</h1>
-        <p className="text-neutral-600">Після входу доповніть свій профіль у кабінеті.</p>
+        <p className="text-neutral-600">Email+пароль, телефон з OTP або Google. Після входу доповніть профіль.</p>
       </div>
       <Card>
-        <AuthPhoneOTP />
+        <AuthPortal defaultMode="register" defaultRole="client" />
       </Card>
     </div>
   );
