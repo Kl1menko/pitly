@@ -40,7 +40,7 @@ export default function HowItWorksPage() {
         </div>
         <div className="relative h-52 w-full overflow-hidden rounded-2xl bg-neutral-800">
           <video
-            src="/videos/video_repair.mp4"
+            src="/videos/video_car.mp4"
             className="absolute inset-0 h-full w-full object-cover"
             autoPlay
             muted
