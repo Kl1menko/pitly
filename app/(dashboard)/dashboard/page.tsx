@@ -135,27 +135,45 @@ export default function DashboardHomePage() {
             </div>
           </Card>
 
-          <Card className="space-y-3">
-            <p className="text-sm text-neutral-600">Активні замовлення</p>
-            <div className="space-y-2">
-              {orders.map((o) => (
-                <div key={o.id} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3">
-                  <div>
-                    <p className="text-sm text-neutral-600">Order {o.id}</p>
-                    <p className="font-semibold text-neutral-900">{o.status}</p>
+          <div className="space-y-4">
+            <Card className="space-y-3">
+              <p className="text-sm text-neutral-600">Активні замовлення</p>
+              <div className="space-y-2">
+                {orders.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3">
+                    <div>
+                      <p className="text-sm text-neutral-600">Order {o.id}</p>
+                      <p className="font-semibold text-neutral-900">{o.status}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary">
+                        Оновити статус
+                      </Button>
+                      <Button size="sm" variant="primary">
+                        Чат
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="secondary">
-                      Оновити статус
-                    </Button>
-                    <Button size="sm" variant="primary">
-                      Чат
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="space-y-2 bg-neutral-50">
+              <p className="text-sm font-semibold text-neutral-900">Порівняння з конкурентами (анонімно)</p>
+              <ul className="space-y-1 text-sm text-neutral-700">
+                <li>• Ціни, відгуки, популярні послуги поруч</li>
+                <li>• Власник бачить, де втрачає клієнтів</li>
+              </ul>
+              <hr className="border-neutral-200" />
+              <p className="text-sm font-semibold text-neutral-900">SEO + маркетинг-дашборд</p>
+              <ul className="space-y-1 text-sm text-neutral-700">
+                <li>• 📍 Локальний рейтинг</li>
+                <li>• 📞 Звідки дзвінки</li>
+                <li>• 💵 Які послуги дають прибуток</li>
+              </ul>
+              <p className="text-xs text-neutral-500">Просто й зрозуміло — дані скоро доступні в кабінеті.</p>
+            </Card>
+          </div>
         </div>
       )}
     </div>
