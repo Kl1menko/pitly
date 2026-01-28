@@ -19,7 +19,6 @@ export const metadata = {
 };
 
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight, MapPin } from "lucide-react";
 
 import { SearchHero } from "@/components/shared/search-hero";
