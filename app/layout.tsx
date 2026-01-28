@@ -28,7 +28,6 @@ export const metadata: Metadata = {
       { rel: "manifest", url: "/images/icons/site.webmanifest" }
     ]
   },
-  themeColor: "#111827",
   openGraph: {
     title: "Pitly",
     description: "Каталог СТО та магазинів автозапчастин по Україні",
@@ -37,6 +36,10 @@ export const metadata: Metadata = {
     locale: "uk_UA",
     type: "website"
   }
+};
+
+export const viewport = {
+  themeColor: "#111827"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -53,10 +53,24 @@ export async function getPartnersByCity(params: {
     const city = cityId ? demoCities.find((c) => c.id === cityId) : demoCities.find((c) => c.slug === citySlug);
     let list = demoPartners.filter((p) => p.type === type && p.city_id === city?.id && p.status === "active");
     if (filters?.services?.length && type === "sto") {
-      list = list.filter((p) => filters.services!.every((s) => p.services?.includes(s)));
+      list = list.filter((p) =>
+        filters.services!.every((s) =>
+          p.services?.some((ps) => {
+            const key = typeof ps === "string" ? ps : ps.id;
+            return key === s;
+          })
+        )
+      );
     }
     if (filters?.categories?.length && type === "shop") {
-      list = list.filter((p) => filters.categories!.some((c) => p.categories?.includes(c)));
+      list = list.filter((p) =>
+        filters.categories!.some((c) =>
+          p.categories?.some((pc) => {
+            const key = typeof pc === "string" ? pc : pc.id;
+            return key === c;
+          })
+        )
+      );
     }
     if (filters?.brand) {
       list = list.filter((p) => !p.brands || p.brands.includes(filters.brand!));
@@ -115,10 +129,24 @@ export async function getPartnersByCity(params: {
     })) ?? [];
 
   if (filters?.services?.length && type === "sto") {
-    partners = partners.filter((p) => filters.services!.every((s) => p.services?.includes(s)));
+    partners = partners.filter((p) =>
+      filters.services!.every((s) =>
+        p.services?.some((ps) => {
+          const key = typeof ps === "string" ? ps : ps.id;
+          return key === s;
+        })
+      )
+    );
   }
   if (filters?.categories?.length && type === "shop") {
-    partners = partners.filter((p) => filters.categories!.some((c) => p.categories?.includes(c)));
+    partners = partners.filter((p) =>
+      filters.categories!.some((c) =>
+        p.categories?.some((pc) => {
+          const key = typeof pc === "string" ? pc : pc.id;
+          return key === c;
+        })
+      )
+    );
   }
   if (filters?.brand) {
     partners = partners.filter((p) => !p.brands || p.brands.includes(filters.brand!));

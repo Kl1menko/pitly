@@ -40,7 +40,7 @@ export default async function ShopDetailPage({ params }: Props) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            {partner.rating_avg ? (
+            {typeof partner.rating_avg === "number" ? (
               <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
                 ⭐ {partner.rating_avg.toFixed(1)} ({partner.rating_count ?? 0})
               </span>
