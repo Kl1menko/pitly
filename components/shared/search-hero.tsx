@@ -83,6 +83,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
             Знайти
           </Button>
         </form>
+
       </div>
       <style jsx>{`
         .flip-text {

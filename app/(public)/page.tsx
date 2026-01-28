@@ -19,9 +19,11 @@ export const metadata = {
 };
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, MapPin } from "lucide-react";
 
 import { SearchHero } from "@/components/shared/search-hero";
+import { TestimonialsCarousel } from "@/components/shared/testimonials-carousel";
 import { Card } from "@/components/ui/card";
 import { getCities } from "@/lib/supabase/queries";
 
@@ -62,6 +64,32 @@ export default async function HomePage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4">
       <SearchHero cities={cities} />
+
+      <section className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8 md:grid-cols-[1.4fr_1fr] md:items-center">
+        <div>
+          <h1 className="mt-2 text-3xl font-bold leading-tight text-neutral-900">
+            Знаходьте перевірені СТО та автозапчастини у вашому місті — швидко
+            та без дзвінків
+          </h1>
+          <p className="mt-3 text-lg text-neutral-700">
+            Pitly об’єднує автосервіси та магазини в одному місці, щоб ви
+            отримували найкращі пропозиції за кілька хвилин.
+          </p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"></div>
+        </div>
+        <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl ring-1 ring-neutral-200/60 shadow-sm">
+          <video
+            src="/videos/video_car2.mp4"
+            className="h-full w-full object-cover"
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster=""
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-900/10 via-transparent to-transparent" />
+        </div>
+      </section>
 
       <section className="grid gap-5 md:grid-cols-2">
         {featureCards.map((card, idx) => (
@@ -174,6 +202,103 @@ export default async function HomePage() {
           </Link>
         </div>
       </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+          <p className="text-sm font-semibold text-neutral-600">Ріст заявок</p>
+          <div className="mt-2 flex items-end gap-2">
+            <p className="text-3xl font-bold text-neutral-900">+38%</p>
+            <span className="text-xs font-semibold text-emerald-600 animate-pulse">
+              ▲
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-neutral-700">
+            Партнери отримують більше лідів за 4 тижні після підключення.
+          </p>
+        </Card>
+
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+          <p className="text-sm font-semibold text-neutral-600">
+            Конверсія у дзвінок
+          </p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-neutral-900">62%</p>
+            <span className="text-xs font-semibold text-emerald-600 animate-pulse">
+              +3 п.п.
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-neutral-700">
+            Ліди з форм одразу йдуть вам — без зайвих посередників.
+          </p>
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+            <div className="h-full w-[62%] rounded-full bg-neutral-900 transition-all duration-500 group-hover:w-[68%]" />
+          </div>
+        </Card>
+
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+          <p className="text-sm font-semibold text-neutral-600">
+            Рейтинг і відгуки
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <p className="text-3xl font-bold text-neutral-900">4.7</p>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+              +0.2
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-neutral-700">
+            Аналітика цін, відгуків і популярних послуг показує, де підсилити
+            пропозицію.
+          </p>
+          <div className="mt-3 flex items-center gap-2 text-xs text-neutral-600">
+            <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" />
+            Більше перевірених відгуків = вищий рейтинг у каталозі
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            Для клієнтів
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-neutral-900">
+            Чому Pitly зручніше
+          </h3>
+          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+            <li>✔ Перевірені партнери</li>
+            <li>✔ Прозорі ціни</li>
+            <li>✔ Онлайн-запис</li>
+            <li>✔ Реальні відгуки</li>
+            <li>✔ Запчастини з доставкою</li>
+          </ul>
+        </Card>
+
+        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            Для СТО та магазинів
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-neutral-900">
+            Переваги для партнерів
+          </h3>
+          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+            <li>✔ Нові клієнти щодня</li>
+            <li>✔ Заявки без реклами та дзвінків</li>
+            <li>✔ Аналітика та рейтинг</li>
+            <li>✔ Інтеграція у ваш бізнес</li>
+          </ul>
+          <Link
+            href="/register"
+            className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            Стати партнером за 2 хвилини <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Card>
+      </section>
+
+      <TestimonialsCarousel />
     </div>
   );
 }

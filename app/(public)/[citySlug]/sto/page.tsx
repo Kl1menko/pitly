@@ -33,6 +33,7 @@ export default async function StoCityPage({ params, searchParams }: Props) {
 
   const services = await getServices();
   const brands = await getBrands();
+  const cityName = city.name_ua;
 
   const partners = await getPartnersByCity({
     type: "sto",
@@ -45,8 +46,37 @@ export default async function StoCityPage({ params, searchParams }: Props) {
     }
   });
 
+  const faq = [
+    {
+      q: `Де знайти СТО у ${cityName}?`,
+      a: `На Pitly зібрані перевірені сервісні станції у ${cityName}, можна відфільтрувати за послугами та маркою авто.`
+    },
+    {
+      q: `Скільки коштує ремонт ходової у ${cityName}?`,
+      a: `Ціна залежить від діагностики та деталей. Подайте заявку — партнери у ${cityName} надішлють оффери з ціною і термінами.`
+    },
+    {
+      q: `Як записатись на СТО у ${cityName}?`,
+      a: `Обирайте сервіс за рейтингом або залишайте заявку «Заявка на ремонт» — ми передамо її активним СТО у ${cityName}.`
+    }
+  ];
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a }
+    }))
+  };
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="space-y-2">
         <p className="text-sm font-semibold text-primary uppercase">СТО</p>
         <h1 className="text-3xl font-bold">СТО у місті {city.name_ua}</h1>
@@ -65,6 +95,18 @@ export default async function StoCityPage({ params, searchParams }: Props) {
           />
         ))}
       </div>
+
+      <Card className="space-y-2 bg-white/90 ring-1 ring-neutral-200">
+        <h3 className="text-lg font-bold">FAQ про СТО у {cityName}</h3>
+        <div className="space-y-2 text-sm text-neutral-700">
+          {faq.map((item) => (
+            <div key={item.q}>
+              <p className="font-semibold text-neutral-900">{item.q}</p>
+              <p>{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

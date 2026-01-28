@@ -32,6 +32,7 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
 
   const categories = await getPartCategories();
   const brands = await getBrands();
+  const cityName = city.name_ua;
 
   const partners = await getPartnersByCity({
     type: "shop",
@@ -44,8 +45,37 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
     }
   });
 
+  const faq = [
+    {
+      q: `Де купити запчастини у ${cityName}?`,
+      a: `На Pitly можна знайти магазини запчастин у ${cityName} та відразу залишити запит на потрібну деталь.`
+    },
+    {
+      q: `Як дізнатись ціну та наявність деталі у ${cityName}?`,
+      a: `Заповніть форму «Заявка на запчастини» з VIN чи назвою деталі — магазини у ${cityName} надішлють оффери з ціною і термінами.`
+    },
+    {
+      q: `Чи є доставка по ${cityName}?`,
+      a: `У фільтрах можна обрати «Доставка» і бачити лише магазини з цією опцією; багато партнерів доставляють по місту.`
+    }
+  ];
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: { "@type": "Answer", text: item.a }
+    }))
+  };
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <div className="space-y-2">
         <p className="text-sm font-semibold text-primary uppercase">Запчастини</p>
         <h1 className="text-3xl font-bold">Магазини у місті {city.name_ua}</h1>
@@ -60,6 +90,18 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
           <PartnerCard key={partner.id} partner={partner} ctaHref={`/request/parts?city=${params.citySlug}`} />
         ))}
       </div>
+
+      <Card className="space-y-2 bg-white/90 ring-1 ring-neutral-200">
+        <h3 className="text-lg font-bold">FAQ про запчастини у {cityName}</h3>
+        <div className="space-y-2 text-sm text-neutral-700">
+          {faq.map((item) => (
+            <div key={item.q}>
+              <p className="font-semibold text-neutral-900">{item.q}</p>
+              <p>{item.a}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
