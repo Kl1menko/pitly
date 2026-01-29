@@ -46,7 +46,7 @@ export function RequestConfirmDialog({ open, onClose, onSendGuest, onSendWithAcc
               Увійти / Зареєструватись і надіслати
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={onSendGuest}
               className="border-neutral-400 text-neutral-900 hover:border-neutral-600 hover:text-neutral-950"
             >
