@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { AuthPortal } from "@/components/forms/auth-portal";
 import { Card } from "@/components/ui/card";
 
@@ -11,11 +12,14 @@ export default function LoginPage() {
     <div className="mx-auto flex min-h-[80vh] max-w-3xl flex-col items-center justify-center px-4 py-6 sm:py-10">
       <div className="mb-6 space-y-2 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-900">
-          <img
+          <Image
             src="/images/pitly.svg"
             alt="Pitly"
+            width={32}
+            height={32}
             className="h-8 w-8 animate-[bounce_1.5s_ease-in-out_infinite] motion-safe:translate-y-0"
             style={{ animationDuration: "1.6s", animationTimingFunction: "cubic-bezier(0.4,0.0,0.4,1)" }}
+            priority
           />
         </div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">Кабінет</p>
