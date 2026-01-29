@@ -66,13 +66,14 @@ export default async function HomePage() {
 
       <section className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8 md:grid-cols-[1.4fr_1fr] md:items-center">
         <div className="text-center md:text-left">
-          <h1 className="mt-2 text-4xl font-bold leading-tight text-neutral-900 sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-bold leading-tight text-neutral-900 sm:text-5xl">
             Знаходьте перевірені СТО та автозапчастини у вашому місті — швидко
             та без дзвінків
           </h1>
-          <p className="mt-4 text-lg leading-relaxed text-neutral-700 sm:text-xl">
-            Pitly об’єднує автосервіси та магазини в одному місці, щоб ви
-            отримували найкращі пропозиції за кілька хвилин.
+          <p className="mt-4 text-base leading-relaxed text-neutral-700 sm:text-xl">
+            Pitly об’єднує автосервіси та магазини в одному місці. Можна лишити
+            заявку без реєстрації: ми надішлемо посилання у Telegram, і ви
+            повернетесь до пропозицій у будь-який момент.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"></div>
         </div>
@@ -206,9 +207,9 @@ export default async function HomePage() {
         <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
           <p className="text-sm font-semibold text-neutral-600">Ріст заявок</p>
-          <div className="mt-2 flex items-end gap-2">
+          <div className="mt-2 flex items-center gap-2">
             <p className="text-3xl font-bold text-neutral-900">+38%</p>
-            <span className="text-xs font-semibold text-emerald-600 animate-pulse">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-extrabold text-emerald-600 animate-bounce">
               ▲
             </span>
           </div>
@@ -272,6 +273,7 @@ export default async function HomePage() {
             <li>✔ Онлайн-запис</li>
             <li>✔ Реальні відгуки</li>
             <li>✔ Запчастини з доставкою</li>
+            <li>✔ Без спам-дзвінків — зв’язок лише за вашою згодою</li>
           </ul>
         </Card>
 

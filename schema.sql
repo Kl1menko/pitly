@@ -164,10 +164,14 @@ create table if not exists public.requests (
   city_id uuid not null references public.cities(id),
   car_brand_id uuid references public.car_brands(id),
   car_model_id uuid references public.car_models(id),
+  car_model_name text,
   car_year int2,
   vin text,
   part_category_id uuid references public.part_categories(id),
+  extra_part_categories text[] default '{}'::text[],
   part_query text,
+  service_id uuid references public.services(id),
+  extra_services text[] default '{}'::text[],
   problem_description text,
   photos jsonb not null default '[]'::jsonb,
   contact_phone text not null,
@@ -239,6 +243,20 @@ create table if not exists public.messages (
   attachments jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default timezone('utc', now())
 );
+
+-- 3.5 Public request links (magic links для гостей)
+create table if not exists public.request_links (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests(id) on delete cascade,
+  token text not null unique,
+  channel text not null check (channel in ('telegram')),
+  contact text,
+  expires_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now())
+);
+
+create index if not exists request_links_request_idx on public.request_links(request_id);
+create index if not exists request_links_expires_idx on public.request_links(expires_at);
 
 create index if not exists messages_request_idx on public.messages(request_id);
 create index if not exists messages_sender_idx on public.messages(sender_id);

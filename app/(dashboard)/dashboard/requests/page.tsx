@@ -16,8 +16,8 @@ export default function DashboardRequestsPage() {
     <div className="space-y-5">
       <div>
         <p className="text-sm font-semibold text-neutral-900">Заявки</p>
-        <h1 className="text-2xl font-bold">Мої заявки та оффери</h1>
-        <p className="text-neutral-600">Перегляд статусів, вибір оффера, чат та скарги.</p>
+        <h1 className="text-2xl font-bold">Мої заявки та пропозиції</h1>
+        <p className="text-neutral-600">Перегляд статусів, вибір пропозиції, чат та скарги.</p>
       </div>
 
       <div className="space-y-4">
@@ -36,8 +36,8 @@ export default function DashboardRequestsPage() {
                   </p>
                 </div>
                 <Badge className={statusColor[req.status] ?? "bg-neutral-100 text-neutral-800"}>
-                  {req.status === "offers_collecting" && "збираємо оффери"}
-                  {req.status === "client_selected_offer" && "обрано оффер"}
+                  {req.status === "offers_collecting" && "збираємо пропозиції"}
+                  {req.status === "client_selected_offer" && "обрано пропозицію"}
                   {req.status === "in_progress" && "в роботі"}
                   {req.status === "done" && "виконано"}
                   {req.status === "cancelled" && "скасовано"}

@@ -19,11 +19,12 @@ export default async function RequestRepairPage() {
         <div className="space-y-2 md:w-1/2">
           <p className="text-sm font-semibold uppercase tracking-wide text-white/70">Заявка</p>
           <h1 className="text-3xl font-bold">Ремонт авто</h1>
-          <p className="text-white/80">Опишіть симптоми та додайте фото — ми передамо заявку перевіреним СТО.</p>
+          <p className="text-white/80">Опишіть проблему та додайте фото — ми передамо заявку перевіреним СТО.</p>
         </div>
         <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-neutral-800 md:h-56 md:w-1/2">
           <video
             src="/videos/video_car.mp4"
+            poster="/images/img_banner.gif"
             className="absolute inset-0 h-full w-full object-cover"
             autoPlay
             muted

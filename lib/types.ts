@@ -55,6 +55,7 @@ export interface RequestPayloadBase {
   contact_name?: string | null;
   car_brand_id?: string | null;
   car_model_id?: string | null;
+  car_model_name?: string | null;
   car_year?: number | null;
 }
 
@@ -62,12 +63,14 @@ export interface RepairRequestPayload extends RequestPayloadBase {
   type: "repair";
   problem_description?: string | null;
   service_id?: string | null;
+  extra_services?: string[] | null;
   photos?: string[];
 }
 
 export interface PartsRequestPayload extends RequestPayloadBase {
   type: "parts";
   part_category_id: string;
+  extra_part_categories?: string[] | null;
   part_query: string;
   delivery_needed?: boolean;
 }
