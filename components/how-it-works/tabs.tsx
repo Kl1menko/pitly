@@ -8,13 +8,13 @@ type Tab = {
   id: "clients" | "partners";
   label: string;
   title: string;
-  bullets: string[];
+  bullets: readonly string[];
   cta: { href: string; label: string };
   extra: string;
 };
 
 type Props = {
-  tabs: readonly Tab[];
+  tabs: ReadonlyArray<Tab>;
 };
 
 export function HowTabs({ tabs }: Props) {
