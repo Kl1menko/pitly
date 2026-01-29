@@ -125,10 +125,6 @@ export function RequestPartsForm({
           <Label>Модель авто</Label>
           <Input placeholder="Наприклад: Focus Mk3" {...form.register("car_model_name")} />
         </div>
-        <div>
-          <Label>VIN (полегшить підбір)</Label>
-          <Input placeholder="VF3XXXXXXXXXXXXXX" {...form.register("vin")} />
-        </div>
         <div className="md:col-span-2">
           <Label>Категорії (можна кілька)</Label>
           <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto rounded-xl border border-neutral-200 p-3">
