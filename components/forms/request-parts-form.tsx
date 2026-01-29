@@ -43,13 +43,15 @@ export function RequestPartsForm({
       contact_telegram: "",
       target_partner_id: partnerParam || "",
       part_categories: [],
+      part_query: "",
       car_model_name: "",
-      vin: "",
       car_year: undefined,
       car_brand_id: undefined,
       car_model_id: undefined,
       contact_name: "",
-      delivery_needed: false
+      delivery_needed: false,
+      contact_phone: "",
+      contact_telegram: ""
     }
   });
 
