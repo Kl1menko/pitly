@@ -15,7 +15,7 @@ export default function LoginPage() {
             src="/images/pitly.svg"
             alt="Pitly"
             className="h-8 w-8 animate-[bounce_1.5s_ease-in-out_infinite] motion-safe:translate-y-0"
-            style={{ animationTimingFunction: "ease-in-out", animationDuration: "1.6s", animationTimingFunction: "cubic-bezier(0.4,0.0,0.4,1)" }}
+            style={{ animationDuration: "1.6s", animationTimingFunction: "cubic-bezier(0.4,0.0,0.4,1)" }}
           />
         </div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">Кабінет</p>
