@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Card } from "@/components/ui/card";
@@ -41,9 +41,12 @@ export default function DashboardHomePage() {
 
   const clientRequests = demoRequests;
   const orders = demoOrders;
-  const name = useMemo(() => {
-    if (typeof localStorage === "undefined") return "Клієнт";
-    return localStorage.getItem("pitly_user_name") || "Клієнт";
+  const [name, setName] = useState("Клієнт");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setName(localStorage.getItem("pitly_user_name") || "Клієнт");
+    }
   }, []);
 
   return (
