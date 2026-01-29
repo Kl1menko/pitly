@@ -105,7 +105,7 @@ export default function DashboardHomePage() {
                   </div>
                   <p className="mt-1 font-semibold text-neutral-900">{r.problem_description || r.part_query || "Заявка"}</p>
                   <p className="text-sm text-neutral-600">
-                    {r.city_id ? `Місто: ${r.city_id}` : ""} {r.preferred_time ? ` · Час: ${r.preferred_time}` : ""}
+                    {r.city_id ? `Місто: ${r.city_id}` : ""}
                   </p>
                 </div>
               ))}
