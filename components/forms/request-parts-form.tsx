@@ -44,7 +44,12 @@ export function RequestPartsForm({
       target_partner_id: partnerParam || "",
       part_categories: [],
       car_model_name: "",
-      vin: ""
+      vin: "",
+      car_year: undefined,
+      car_brand_id: undefined,
+      car_model_id: undefined,
+      contact_name: "",
+      delivery_needed: false
     }
   });
 
