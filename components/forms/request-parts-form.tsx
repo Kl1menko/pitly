@@ -38,9 +38,6 @@ export function RequestPartsForm({
     resolver: zodResolver(partsRequestSchema),
     defaultValues: {
       city_id: cityParam ? cities.find((c) => c.slug === cityParam)?.id ?? "" : "",
-      part_query: "",
-      contact_phone: "",
-      contact_telegram: "",
       target_partner_id: partnerParam || "",
       part_categories: [],
       part_query: "",
