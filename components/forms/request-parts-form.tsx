@@ -214,7 +214,6 @@ export function RequestPartsForm({
             { label: "Місто", value: cities.find((c) => c.id === pendingValues?.city_id)?.name_ua },
             { label: "Марка", value: brands.find((b) => b.id === pendingValues?.car_brand_id)?.name },
             { label: "Модель", value: pendingValues?.car_model_name },
-            { label: "VIN", value: pendingValues?.vin },
             {
               label: "Категорії",
               value: pendingValues?.part_categories?.length
