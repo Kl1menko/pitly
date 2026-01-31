@@ -43,7 +43,7 @@ export default function RequestDetailPage({ params }: { params: { id: string } }
           <p className="text-sm text-neutral-500">Заявка #{request.id}</p>
           <h1 className="text-2xl font-bold text-neutral-900">{request.problem_description || request.part_query || "Заявка"}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-neutral-600">
-            <Badge variant="secondary" className="rounded-full bg-blue-100 text-blue-800">
+            <Badge className="rounded-full bg-blue-100 text-blue-800">
               {request.type === "repair" ? "Ремонт" : "Запчастини"}
             </Badge>
             <span className="flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
@@ -115,19 +115,18 @@ export default function RequestDetailPage({ params }: { params: { id: string } }
                     <div className="text-right font-semibold">₴{o.price ?? "—"}</div>
                     <div className="text-right text-neutral-700">{o.eta_days ?? "—"} дн</div>
                     <div className="flex justify-center">
-                      <Badge
-                        variant="secondary"
-                        className={cn(
-                          "rounded-full",
-                          o.status === "sent"
-                            ? "bg-neutral-100 text-neutral-800"
-                            : o.status === "accepted"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-blue-100 text-blue-800"
-                        )}
-                      >
-                        {statusLabel[o.status] ?? o.status}
-                      </Badge>
+                    <Badge
+                      className={cn(
+                        "rounded-full",
+                        o.status === "sent"
+                          ? "bg-neutral-100 text-neutral-800"
+                          : o.status === "accepted"
+                            ? "bg-emerald-100 text-emerald-800"
+                            : "bg-blue-100 text-blue-800"
+                      )}
+                    >
+                      {statusLabel[o.status] ?? o.status}
+                    </Badge>
                     </div>
                     <div className="flex justify-center gap-2">
                       <Button size="sm" className="rounded-full px-4">Обрати</Button>
@@ -148,7 +147,7 @@ export default function RequestDetailPage({ params }: { params: { id: string } }
                 <div key={o.id} className="rounded-xl border border-neutral-200 p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold text-neutral-900">{partner?.name ?? "Партнер"}</div>
-                    <Badge variant="secondary" className="rounded-full bg-neutral-100 text-neutral-800">
+                    <Badge className="rounded-full bg-neutral-100 text-neutral-800">
                       {statusLabel[o.status] ?? o.status}
                     </Badge>
                   </div>

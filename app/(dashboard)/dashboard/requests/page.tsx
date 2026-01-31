@@ -101,7 +101,7 @@ export default function DashboardRequestsPage() {
               <div key={req.id} className="flex flex-col gap-3 border-t border-neutral-100 px-4 py-4 first:border-t-0 md:flex-row md:items-center">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="secondary" className={cn("rounded-full", req.type === "repair" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800")}>
+                    <Badge className={cn("rounded-full", req.type === "repair" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800")}>
                       {req.type === "repair" ? "Ремонт" : "Запчастини"}
                     </Badge>
                     <span className="flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
