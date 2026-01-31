@@ -190,70 +190,70 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:bg-neutral-900 dark:ring-neutral-800 dark:shadow-[0_20px_60px_-40px_rgba(0,0,0,0.7)]">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-          <p className="text-sm font-semibold text-neutral-600">Ріст заявок</p>
+          <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">Ріст заявок</p>
           <div className="mt-2 flex items-center gap-2">
-            <p className="text-3xl font-bold text-neutral-900">+38%</p>
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-extrabold text-emerald-600 animate-bounce">
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white">+38%</p>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-extrabold text-emerald-600 animate-bounce dark:bg-emerald-200/20 dark:text-emerald-300">
               ▲
             </span>
           </div>
-          <p className="mt-2 text-sm text-neutral-700">
+          <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300">
             Партнери отримують більше лідів за 4 тижні після підключення.
           </p>
         </Card>
 
-        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:bg-neutral-900 dark:ring-neutral-800 dark:shadow-[0_20px_60px_-40px_rgba(0,0,0,0.7)]">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-          <p className="text-sm font-semibold text-neutral-600">
+          <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
             Конверсія у дзвінок
           </p>
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-bold text-neutral-900">62%</p>
-            <span className="text-xs font-semibold text-emerald-600 animate-pulse">
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white">62%</p>
+            <span className="text-xs font-semibold text-emerald-600 animate-pulse dark:text-emerald-300">
               +3 п.п.
             </span>
           </div>
-          <p className="mt-2 text-sm text-neutral-700">
+          <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300">
             Ліди з форм одразу йдуть вам — без зайвих посередників.
           </p>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
-            <div className="h-full w-[62%] rounded-full bg-neutral-900 transition-all duration-500 group-hover:w-[68%]" />
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+            <div className="h-full w-[62%] rounded-full bg-neutral-900 transition-all duration-500 group-hover:w-[68%] dark:bg-white" />
           </div>
         </Card>
 
-        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <Card className="group relative overflow-hidden bg-white/90 p-6 ring-1 ring-neutral-200 transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:bg-neutral-900 dark:ring-neutral-800 dark:shadow-[0_20px_60px_-40px_rgba(0,0,0,0.7)]">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-          <p className="text-sm font-semibold text-neutral-600">
+          <p className="text-sm font-semibold text-neutral-600 dark:text-neutral-300">
             Рейтинг і відгуки
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <p className="text-3xl font-bold text-neutral-900">4.7</p>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+            <p className="text-3xl font-bold text-neutral-900 dark:text-white">4.7</p>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-200/20 dark:text-emerald-300">
               +0.2
             </span>
           </div>
-          <p className="mt-2 text-sm text-neutral-700">
+          <p className="mt-2 text-sm text-neutral-700 dark:text-neutral-300">
             Аналітика цін, відгуків і популярних послуг показує, де підсилити
             пропозицію.
           </p>
-          <div className="mt-3 flex items-center gap-2 text-xs text-neutral-600">
-            <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500" />
+          <div className="mt-3 flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+            <span className="h-2 w-2 animate-ping rounded-full bg-emerald-500 dark:bg-emerald-300" />
             Більше перевірених відгуків = вищий рейтинг у каталозі
           </div>
         </Card>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm dark:bg-neutral-900 dark:ring-neutral-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
             Для клієнтів
           </p>
-          <h3 className="mt-2 text-xl font-bold text-neutral-900">
+          <h3 className="mt-2 text-xl font-bold text-neutral-900 dark:text-white">
             Чому Pitly зручніше
           </h3>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-3 space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
             <li>✔ Перевірені партнери</li>
             <li>✔ Прозорі ціни</li>
             <li>✔ Онлайн-запис</li>
@@ -263,14 +263,14 @@ export default async function HomePage() {
           </ul>
         </Card>
 
-        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">
+        <Card className="bg-white/90 p-6 ring-1 ring-neutral-200 shadow-sm dark:bg-neutral-900 dark:ring-neutral-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">
             Для СТО та магазинів
           </p>
-          <h3 className="mt-2 text-xl font-bold text-neutral-900">
+          <h3 className="mt-2 text-xl font-bold text-neutral-900 dark:text-white">
             Переваги для партнерів
           </h3>
-          <ul className="mt-3 space-y-2 text-sm text-neutral-700">
+          <ul className="mt-3 space-y-2 text-sm text-neutral-700 dark:text-neutral-300">
             <li>✔ Нові клієнти щодня</li>
             <li>✔ Заявки без реклами та дзвінків</li>
             <li>✔ Аналітика та рейтинг</li>
@@ -278,7 +278,7 @@ export default async function HomePage() {
           </ul>
           <Link
             href="/register"
-            className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+            className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-white dark:text-neutral-900"
           >
             Стати партнером за 2 хвилини <ArrowRight className="h-4 w-4" />
           </Link>
