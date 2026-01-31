@@ -25,7 +25,7 @@ function DashboardProfileContent() {
   const [role, setRole] = useState<RoleView>("client");
 
   useEffect(() => {
-    const demo = params.get("demo");
+    const demo = params?.get("demo");
     if (demo === "partner" || demo === "client") {
       setRole(demo);
       return;

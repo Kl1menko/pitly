@@ -21,7 +21,7 @@ export function ShopFilters({
   categories: PartCategory[];
   brands: CarBrand[];
 }) {
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams() ?? new URLSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);

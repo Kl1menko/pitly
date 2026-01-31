@@ -43,7 +43,7 @@ function DashboardHomeContent() {
   const [viewAs, setViewAs] = useState<"client" | "partner">("client");
 
   useEffect(() => {
-    const demo = searchParams.get("demo");
+    const demo = searchParams?.get("demo");
     if (demo === "partner" || demo === "client") {
       setViewAs(demo);
     }

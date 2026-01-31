@@ -31,7 +31,7 @@ export function RequestRepairForm({
   brands: CarBrand[];
 }) {
   const router = useRouter();
-  const params = useSearchParams();
+  const params = useSearchParams() ?? new URLSearchParams();
   const cityParam = params.get("city") ?? "";
   const partnerParam = params.get("partner") ?? "";
   const [uploading, setUploading] = useState(false);
