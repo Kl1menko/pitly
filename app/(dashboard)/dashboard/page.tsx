@@ -1,181 +1,242 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarClock, Inbox, PlusCircle, Sparkles, TriangleAlert } from "lucide-react";
+import { useMemo } from "react";
+import { Activity, Bell, Clock3, Inbox, LineChart, ShieldCheck, Sparkles, Star, TrendingUp } from "lucide-react";
 
-import { demoOffers, demoRequests, demoCities } from "@/lib/data/demo";
+import { demoOffers, demoRequests } from "@/lib/data/demo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
-const statusLabel: Record<string, string> = {
-  draft: "Чернетка",
-  published: "Опубліковано",
-  offers_collecting: "Збираємо пропозиції",
-  client_selected_offer: "Ви обрали виконавця",
-  in_progress: "В роботі",
-  done: "Завершено",
-  cancelled: "Скасовано",
-  expired: "Протерміновано",
-  new: "Нова"
-};
+import { cn } from "@/lib/utils";
 
 const activeStatuses = ["new", "published", "offers_collecting", "client_selected_offer", "in_progress"];
 
 export default function DashboardHomePage() {
-  const activeRequests = demoRequests.filter((r) => activeStatuses.includes(r.status));
-  const lastActive = activeRequests[0];
-  const newOffers = demoOffers.filter((o) => o.status === "sent");
-  const waiting = newOffers.length;
-  const lastActiveCity = lastActive ? demoCities.find((c) => c.id === lastActive.city_id)?.name_ua || lastActive.city_id : "";
+  const activeRequests = useMemo(() => demoRequests.filter((r) => activeStatuses.includes(r.status)), []);
+  const inbox = activeRequests.length;
+  const sentOffers = demoOffers.length;
+  const acceptedOffers = demoOffers.filter((o) => o.status === "accepted").length;
+  const conversion = sentOffers ? Math.round((acceptedOffers / sentOffers) * 100) : 0;
+  const responseTimeMin = 18;
+  const rating = 4.7;
+  const reviews = 128;
+
+  const charts = {
+    requests: [6, 9, 5, 11, 8, 12, 9],
+    conversion: [42, 48, 51, 55, 58, 60, 62],
+    services: [
+      { label: "Діагностика", value: 36 },
+      { label: "Гальмівна система", value: 28 },
+      { label: "Підвіска", value: 22 },
+      { label: "Заміна мастила", value: 18 },
+      { label: "Запчастини (VIN)", value: 15 }
+    ],
+    response: [
+      { label: "Median", value: 18 },
+      { label: "Top партнери", value: 6 }
+    ]
+  };
+
+  const tips = [
+    { title: "Відповідайте швидше", text: "Середній час 18 хв. Топ партнери тримають 6 хв.", icon: Clock3 },
+    { title: "Додайте фото робіт", text: "Профілі з фото отримують до 22% більше виборів.", icon: ShieldCheck },
+    { title: "Заповніть графік роботи", text: "Клієнти частіше обирають сервіси з актуальним графіком.", icon: Bell }
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-neutral-500">Кабінет клієнта</p>
-          <h1 className="text-2xl font-bold text-neutral-900">Швидкий огляд</h1>
+          <p className="text-sm text-neutral-500">Кабінет партнера</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Огляд</h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" className="rounded-full bg-neutral-900 px-4 hover:-translate-y-0.5 hover:shadow-md">
-            <Link href="/request/repair">Заявка на ремонт</Link>
+          <Button asChild size="sm" className="rounded-full bg-neutral-900 px-4 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-neutral-900">
+            <Link href="/dashboard/requests">Inbox</Link>
           </Button>
           <Button asChild size="sm" variant="secondary" className="rounded-full px-4 hover:-translate-y-0.5 hover:shadow-md">
-            <Link href="/request/parts">Заявка на запчастини</Link>
+            <Link href="/dashboard/profile">Оновити профіль</Link>
           </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Активні заявки" value={activeRequests.length} icon={<Inbox className="h-4 w-4" />} />
-        <StatCard label="Нові пропозиції" value={newOffers.length} icon={<Sparkles className="h-4 w-4" />} />
-        <StatCard label="Очікують відповіді" value={waiting} icon={<CalendarClock className="h-4 w-4" />} />
-      </div>
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Нові заявки (24h)" value={inbox} icon={<Inbox className="h-4 w-4" />} accent="emerald" />
+        <StatCard label="Надіслані пропозиції" value={sentOffers} icon={<Sparkles className="h-4 w-4" />} accent="blue" />
+        <StatCard label="Прийняті пропозиції" value={acceptedOffers} icon={<TrendingUp className="h-4 w-4" />} accent="amber" />
+        <StatCard label="Конверсія (прийнято/надіслано)" value={`${conversion}%`} icon={<Activity className="h-4 w-4" />} accent="violet" />
+        <StatCard label="Сер. час відповіді" value={`${responseTimeMin} хв`} icon={<Clock3 className="h-4 w-4" />} accent="rose" />
+        <StatCard label="Рейтинг / відгуки" value={`${rating} · ${reviews}`} icon={<Star className="h-4 w-4" />} accent="cyan" />
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
-        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm">
+      <section className="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-neutral-600">Остання активна заявка</p>
-              <h2 className="text-xl font-semibold text-neutral-900">{lastActive ? "Перевірте пропозиції" : "Немає активних"}</h2>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Заявки по днях</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Динаміка за тиждень</h3>
             </div>
-            <Badge className="rounded-full bg-amber-100 text-amber-800">Заявки</Badge>
+            <Badge className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-white/10 dark:text-white">7 днів</Badge>
           </div>
-          {lastActive ? (
-            <div className="space-y-3 rounded-2xl border border-neutral-200 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">
-                    {lastActive.type === "repair" ? "Ремонт" : "Запчастини"}
-                  </p>
-                  <p className="text-lg font-semibold text-neutral-900">
-                    {lastActive.problem_description || lastActive.part_query || "Заявка"}
-                  </p>
-                  <p className="text-sm text-neutral-600">Місто: {lastActiveCity}</p>
+          <Sparkline values={charts.requests} max={Math.max(...charts.requests)} />
+          <div className="flex gap-3 text-xs text-neutral-500 dark:text-neutral-400">
+            <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" /> Заявки</span>
+          </div>
+        </Card>
+
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Конверсія по тижнях</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">% прийнятих пропозицій</h3>
+            </div>
+            <LineChart className="h-5 w-5 text-neutral-500" />
+          </div>
+          <Sparkline values={charts.conversion} max={100} tone="gradient" />
+          <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-400">
+            <span>Тиждень -6</span>
+            <span>Тиждень 0</span>
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">ТОП послуги / категорії</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Де вас найчастіше обирають</h3>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {charts.services.map((s) => (
+              <div key={s.label} className="space-y-1">
+                <div className="flex items-center justify-between text-sm text-neutral-700 dark:text-neutral-300">
+                  <span>{s.label}</span>
+                  <span className="font-semibold text-neutral-900 dark:text-white">{s.value}</span>
                 </div>
-                <Badge className="rounded-full bg-neutral-100 text-neutral-800">
-                  {statusLabel[lastActive.status] ?? lastActive.status}
+                <div className="h-2 w-full rounded-full bg-neutral-100 dark:bg-neutral-800">
+                  <div className="h-full rounded-full bg-gradient-to-r from-neutral-900 to-neutral-700 dark:from-white dark:to-neutral-200" style={{ width: `${Math.min(s.value, 60)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Час відповіді</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Медіана vs топ</h3>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {charts.response.map((item) => (
+              <div key={item.label} className="flex items-center justify-between rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-800">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-neutral-900 dark:bg-white" />
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{item.label}</p>
+                </div>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300">{item.value} хв</p>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-xl border border-dashed border-neutral-200 p-3 text-sm text-neutral-700 dark:border-neutral-700 dark:text-neutral-300">
+            Мета: відповіді &lt; 10 хв на нові заявки.
+          </div>
+        </Card>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
+        <Card className="space-y-3 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Inbox</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Нові заявки</h3>
+            </div>
+            <Button asChild size="sm" className="rounded-full px-4">
+              <Link href="/dashboard/requests">Перейти в Inbox</Link>
+            </Button>
+          </div>
+          <div className="grid gap-3">
+            {activeRequests.slice(0, 4).map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 p-3 dark:border-neutral-800 dark:bg-neutral-900/70">
+                <Badge className="rounded-full bg-neutral-100 text-neutral-800 dark:bg-white/10 dark:text-white/90">
+                  {r.type === "repair" ? "Ремонт" : "Запчастини"}
                 </Badge>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-3">
-                <TinyStat label="Партнери бачать" value="18" />
-                <TinyStat label="Пропозицій отримано" value={demoOffers.filter((o) => o.request_id === lastActive.id).length} />
-                <TinyStat label="Статус" value={statusLabel[lastActive.status] ?? lastActive.status} />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button asChild className="rounded-full bg-neutral-900 px-4 hover:-translate-y-0.5 hover:shadow-md">
-                  <Link href={`/dashboard/requests/${lastActive.id}`}>Переглянути пропозиції</Link>
-                </Button>
-                <Button asChild variant="secondary" className="rounded-full px-4 hover:-translate-y-0.5 hover:shadow-md">
-                  <Link href="/request/repair">Нова заявка</Link>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{r.problem_description || r.part_query || "Заявка"}</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">ID: {r.id}</p>
+                </div>
+                <Button asChild size="sm" className="rounded-full px-4">
+                  <Link href={`/dashboard/requests/${r.id}`}>Відповісти</Link>
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-neutral-200 p-4 text-neutral-600">Активних заявок немає.</div>
-          )}
-        </Card>
-
-        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-neutral-900">Швидкі дії</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <QuickAction href="/request/repair" title="Заявка на ремонт" />
-            <QuickAction href="/request/parts" title="Заявка на запчастину" />
-            <QuickAction href="/dashboard/cars" title="Додати авто" />
-            <QuickAction href="/dashboard/requests" title="Мої заявки" />
-          </div>
-          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
-            <div className="flex items-start gap-2">
-              <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
-              <p>Контакти партнерів відкриються після того, як ви оберете пропозицію. Жодного спаму.</p>
-            </div>
+            ))}
+            {activeRequests.length === 0 && <p className="text-sm text-neutral-500">Немає нових заявок.</p>}
           </div>
         </Card>
-      </div>
 
-      <Card className="rounded-2xl border border-neutral-100 p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-neutral-600">Активні заявки</p>
-            <h3 className="text-lg font-semibold text-neutral-900">Швидкий список</h3>
+        <Card className="space-y-3 rounded-2xl border border-neutral-100 p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">Що покращити</p>
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">Автопоради</h3>
+            </div>
           </div>
-          <Button asChild size="sm" variant="secondary" className="rounded-full px-4">
-            <Link href="/dashboard/requests">Усі заявки</Link>
-          </Button>
-        </div>
-        <div className="mt-3 grid gap-3">
-          {activeRequests.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 p-3">
-              <Badge className="rounded-full bg-neutral-100 text-neutral-800">
-                {r.type === "repair" ? "Ремонт" : "Запчастини"}
-              </Badge>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-neutral-900">{r.problem_description || r.part_query || "Заявка"}</p>
-                <p className="text-xs text-neutral-600">Місто: {r.city_id}</p>
+          <div className="space-y-3">
+            {tips.map((tip) => (
+              <div key={tip.title} className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-3 dark:border-neutral-800 dark:bg-neutral-800/60">
+                <span className="mt-1 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white dark:bg-white dark:text-neutral-900">
+                  <tip.icon className="h-4 w-4" />
+                </span>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-neutral-900 dark:text-white">{tip.title}</p>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-300">{tip.text}</p>
+                </div>
               </div>
-              <Badge className="rounded-full">{statusLabel[r.status] ?? r.status}</Badge>
-              <Button asChild size="sm" className="rounded-full px-4">
-                <Link href={`/dashboard/requests/${r.id}`}>Відкрити</Link>
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Card>
+            ))}
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+function StatCard({ label, value, icon, accent }: { label: string; value: number | string; icon: React.ReactNode; accent: "emerald" | "blue" | "amber" | "violet" | "rose" | "cyan" }) {
+  const tones: Record<typeof accent, string> = {
+    emerald: "from-emerald-500/15 to-emerald-500/5",
+    blue: "from-sky-500/15 to-sky-500/5",
+    amber: "from-amber-500/15 to-amber-500/5",
+    violet: "from-violet-500/15 to-violet-500/5",
+    rose: "from-rose-500/15 to-rose-500/5",
+    cyan: "from-cyan-500/15 to-cyan-500/5"
+  };
   return (
-    <Card className="flex items-center gap-3 rounded-2xl border border-neutral-100 p-4 shadow-sm">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-sm">{icon}</div>
+    <Card className={cn("flex items-center gap-3 rounded-2xl border border-neutral-100 p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900", `bg-gradient-to-r ${tones[accent]}`)}>
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900">{icon}</div>
       <div>
-        <p className="text-sm text-neutral-500">{label}</p>
-        <p className="text-2xl font-bold text-neutral-900">{value}</p>
+        <p className="text-sm text-neutral-500 dark:text-neutral-300">{label}</p>
+        <p className="text-2xl font-bold text-neutral-900 dark:text-white">{value}</p>
       </div>
     </Card>
   );
 }
 
-function TinyStat({ label, value }: { label: string; value: string | number }) {
+function Sparkline({ values, max, tone = "solid" }: { values: number[]; max: number; tone?: "solid" | "gradient" }) {
   return (
-    <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
-      <p className="text-xs text-neutral-500">{label}</p>
-      <p className="text-sm font-semibold text-neutral-900">{value}</p>
+    <div className="flex h-28 items-end gap-1 rounded-xl border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-800 dark:bg-neutral-800/60">
+      {values.map((v, idx) => {
+        const height = max === 0 ? 0 : Math.max(6, Math.round((v / max) * 90));
+        return (
+          <div
+            key={`${v}-${idx}`}
+            className={cn("w-full rounded-md transition-all", tone === "gradient" ? "bg-gradient-to-t from-neutral-900 to-neutral-600 dark:from-white dark:to-neutral-300" : "bg-neutral-900 dark:bg-white")}
+            style={{ height: `${height}%` }}
+          />
+        );
+      })}
     </div>
-  );
-}
-
-function QuickAction({ href, title }: { href: string; title: string }) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center justify-between rounded-xl border border-neutral-100 px-3 py-3 text-sm font-semibold text-neutral-900 transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      {title}
-      <PlusCircle className="h-4 w-4 text-neutral-500" />
-    </Link>
   );
 }

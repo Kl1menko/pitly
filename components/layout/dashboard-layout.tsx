@@ -2,18 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListChecks, Settings, Car, User, LogOut } from "lucide-react";
+import { BarChart3, Home, Inbox, ListChecks, LogOut, Settings, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Огляд", icon: Home },
-  { href: "/dashboard/requests", label: "Мої заявки", icon: ListChecks },
-  { href: "/dashboard/cars", label: "Мої авто", icon: Car },
+  { href: "/dashboard/requests", label: "Inbox", icon: Inbox },
+  { href: "/dashboard/offers", label: "Пропозиції", icon: ListChecks },
+  { href: "/dashboard/orders", label: "Замовлення", icon: BarChart3 },
   { href: "/dashboard/profile", label: "Профіль", icon: User },
   { href: "/dashboard/settings", label: "Налаштування", icon: Settings }
 ];
-const bottomLinks = links.slice(0, 4);
+const bottomLinks = [
+  { href: "/dashboard", label: "Огляд", icon: Home },
+  { href: "/dashboard/requests", label: "Inbox", icon: Inbox },
+  { href: "/dashboard/offers", label: "Пропозиції", icon: ListChecks },
+  { href: "/dashboard/profile", label: "Профіль", icon: User }
+];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
