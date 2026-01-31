@@ -23,6 +23,12 @@ export const partsRequestSchema = z.object({
   car_model_id: z.string().optional(),
   car_model_name: z.string().optional(),
   car_year: z.coerce.number().int().min(1980).max(new Date().getFullYear()).optional().or(z.nan().transform(() => undefined)),
+  vin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .optional()
+    .refine((v) => !v || (v.length >= 11 && v.length <= 20), "Некоректний VIN"),
   part_categories: z.array(z.string()).min(1, "Оберіть категорію"),
   part_query: z.string().min(3, "Деталі про запчастину"),
   delivery_needed: z.boolean().optional(),

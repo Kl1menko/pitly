@@ -39,6 +39,7 @@ export function RequestPartsForm({
     defaultValues: {
       city_id: cityParam ? cities.find((c) => c.slug === cityParam)?.id ?? "" : "",
       target_partner_id: partnerParam || "",
+      vin: "",
       part_categories: [],
       part_query: "",
       car_model_name: "",
@@ -69,6 +70,7 @@ export function RequestPartsForm({
           car_model_id: values.car_model_id || null,
           car_model_name: values.car_model_name || null,
           car_year: values.car_year || null,
+          vin: values.vin?.trim().toUpperCase() || null,
           part_category_id: values.part_categories?.[0],
           extra_part_categories: values.part_categories?.slice(1) ?? [],
           part_query: values.part_query,
@@ -124,6 +126,12 @@ export function RequestPartsForm({
         <div>
           <Label>Модель авто</Label>
           <Input placeholder="Наприклад: Focus Mk3" {...form.register("car_model_name")} />
+        </div>
+        <div>
+          <Label>VIN</Label>
+          <Input placeholder="Наприклад: WBA4B31010F123456" {...form.register("vin")} />
+          <p className="mt-1 text-xs text-neutral-500">Опціонально, але допоможе підібрати точні запчастини.</p>
+          {form.formState.errors.vin && <p className="mt-1 text-sm text-red-500">{form.formState.errors.vin.message as string}</p>}
         </div>
         <div className="md:col-span-2">
           <Label>Категорії (можна кілька)</Label>
@@ -214,6 +222,7 @@ export function RequestPartsForm({
             { label: "Місто", value: cities.find((c) => c.id === pendingValues?.city_id)?.name_ua },
             { label: "Марка", value: brands.find((b) => b.id === pendingValues?.car_brand_id)?.name },
             { label: "Модель", value: pendingValues?.car_model_name },
+            { label: "VIN", value: pendingValues?.vin },
             {
               label: "Категорії",
               value: pendingValues?.part_categories?.length
