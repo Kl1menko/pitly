@@ -15,7 +15,7 @@ export function middleware(req: NextRequest) {
     if (demoCookie === "client" || demoCookie === "partner") {
       return NextResponse.next();
     }
-    const hasSession = req.cookies.has("sb-access-token") || req.cookies.has("sb:token");
+    const hasSession = req.cookies.has("sb-access-token") || req.cookies.has("sb-refresh-token") || req.cookies.has("sb:token");
     if (!hasSession) {
       const redirectUrl = new URL("/login", req.url);
       return NextResponse.redirect(redirectUrl);
