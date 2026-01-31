@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -82,7 +83,9 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
         <p className="text-neutral-600">Фільтруйте за брендом, категорією та доставкою.</p>
       </div>
 
-      <ShopFilters categories={categories} brands={brands} />
+      <Suspense fallback={<div className="text-neutral-600">Завантаження фільтрів...</div>}>
+        <ShopFilters categories={categories} brands={brands} />
+      </Suspense>
 
       <div className="grid gap-4 md:grid-cols-2">
         {partners.length === 0 && <Card>Немає магазинів за цими фільтрами.</Card>}

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { RequestRepairForm } from "@/components/forms/request-repair-form";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCities, getServices } from "@/lib/supabase/queries";
@@ -35,7 +37,9 @@ export default async function RequestRepairPage() {
         </div>
       </div>
       <Card className="p-4 sm:p-6">
-        <RequestRepairForm cities={cities} services={services} brands={brands} />
+        <Suspense fallback={<div className="text-neutral-600">Завантаження форми...</div>}>
+          <RequestRepairForm cities={cities} services={services} brands={brands} />
+        </Suspense>
       </Card>
     </div>
   );

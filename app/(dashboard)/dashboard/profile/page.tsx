@@ -1,6 +1,6 @@
- "use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,17 @@ import { Card } from "@/components/ui/card";
 
 type RoleView = "client" | "partner";
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardProfilePage() {
+  return (
+    <Suspense fallback={<div className="text-neutral-600">Завантаження профілю...</div>}>
+      <DashboardProfileContent />
+    </Suspense>
+  );
+}
+
+function DashboardProfileContent() {
   const params = useSearchParams();
   const [role, setRole] = useState<RoleView>("client");
 

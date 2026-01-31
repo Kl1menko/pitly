@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { Card } from "@/components/ui/card";
@@ -28,7 +28,17 @@ const statusMeta: Record<
   expired_offer: { color: "bg-neutral-100 text-neutral-800", label: "прострочено" }
 };
 
+export const dynamic = "force-dynamic";
+
 export default function DashboardHomePage() {
+  return (
+    <Suspense fallback={<div className="text-neutral-600">Завантаження кабінету...</div>}>
+      <DashboardHomeContent />
+    </Suspense>
+  );
+}
+
+function DashboardHomeContent() {
   const searchParams = useSearchParams();
   const [viewAs, setViewAs] = useState<"client" | "partner">("client");
 

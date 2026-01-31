@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { RequestPartsForm } from "@/components/forms/request-parts-form";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCities, getPartCategories } from "@/lib/supabase/queries";
@@ -35,7 +37,9 @@ export default async function RequestPartsPage() {
         </div>
       </div>
       <Card className="p-4 sm:p-6">
-        <RequestPartsForm cities={cities} categories={categories} brands={brands} />
+        <Suspense fallback={<div className="text-neutral-600">Завантаження форми...</div>}>
+          <RequestPartsForm cities={cities} categories={categories} brands={brands} />
+        </Suspense>
       </Card>
     </div>
   );

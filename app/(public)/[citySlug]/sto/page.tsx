@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -83,7 +84,9 @@ export default async function StoCityPage({ params, searchParams }: Props) {
         <p className="text-neutral-600">Активні партнери, які приймають заявки онлайн.</p>
       </div>
 
-      <StoFilters services={services} brands={brands} />
+      <Suspense fallback={<div className="text-neutral-600">Завантаження фільтрів...</div>}>
+        <StoFilters services={services} brands={brands} />
+      </Suspense>
 
       <div className="grid gap-4 md:grid-cols-2">
         {partners.length === 0 && <Card>Немає партнерів за цими фільтрами. Спробуйте змінити пошук.</Card>}
