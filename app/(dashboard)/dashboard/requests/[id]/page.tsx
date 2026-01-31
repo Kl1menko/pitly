@@ -175,7 +175,7 @@ export default function RequestDetailPage({ params }: { params: { id: string } }
           <h3 className="text-lg font-semibold text-neutral-900">Деталі заявки</h3>
           <div className="space-y-3">
             <InfoRow label="Тип" value={request.type === "repair" ? "Ремонт" : "Запчастини"} />
-            <InfoRow label="Авто" value={`${request.car_brand_id ?? "Будь-яке"} ${request.car_model_name ?? ""}`} />
+            <InfoRow label="Авто" value={`${request.car_brand_id ?? "Будь-яке"} ${"car_model_name" in request ? (request as { car_model_name?: string }).car_model_name ?? "" : ""}`} />
             <InfoRow label="Рік" value={request.car_year ?? "—"} />
             <InfoRow label="Місто" value={cityName} />
             <InfoRow label="Опис" value={request.problem_description || request.part_query || "—"} />
