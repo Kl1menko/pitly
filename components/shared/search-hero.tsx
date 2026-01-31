@@ -32,7 +32,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
   }, [phrases.length]);
 
   return (
-    <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 overflow-hidden rounded-[28px] border border-neutral-200 bg-gradient-to-r from-white via-neutral-50 to-white shadow-md shadow-neutral-200/50 px-4 sm:px-6">
+    <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 overflow-hidden rounded-[28px] border border-neutral-200 bg-gradient-to-r from-white via-neutral-50 to-white shadow-md shadow-neutral-200/50 px-2 sm:px-4">
       <div className="relative flex flex-col items-center gap-6 p-5 text-center sm:p-6 md:p-10">
         <div className="inline-flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-1.5 text-[11px] font-semibold text-white shadow-sm ring-1 ring-neutral-900/30 sm:text-xs">
           платформа Pitly

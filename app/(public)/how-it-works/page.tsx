@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { SafeVideo } from "@/components/shared/safe-video";
 import Link from "next/link";
 import { HowTabs } from "@/components/how-it-works/tabs";
 
@@ -64,15 +65,7 @@ export default function HowItWorksPage() {
           </div>
         </div>
         <div className="relative h-52 w-full overflow-hidden rounded-2xl bg-neutral-800">
-          <video
-            src="/videos/video_car.mp4"
-            poster="/images/img_banner.gif"
-            className="absolute inset-0 h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+          <SafeVideo src="/videos/video_car.mp4" poster="/images/img_banner.gif" roundedClassName="rounded-2xl" className="absolute inset-0" />
           <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 via-neutral-900/30 to-transparent" />
         </div>
       </div>

@@ -14,13 +14,13 @@ type Props = {
 export function RequestConfirmDialog({ open, onClose, onSendGuest, onSendWithAccount, summary }: Props) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <Card className="w-full max-w-xl space-y-4 p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[11000] flex items-center justify-center bg-black/40 backdrop-blur-sm px-3">
+      <Card className="w-full max-w-xl space-y-4 p-6 shadow-2xl max-h-[85vh] overflow-hidden">
         <div className="space-y-1">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Перевірте заявку</p>
           <h3 className="text-2xl font-bold text-neutral-900">{summary.title}</h3>
         </div>
-        <div className="space-y-2 text-sm text-neutral-800">
+        <div className="space-y-2 text-sm text-neutral-800 overflow-y-auto pr-1 max-h-[50vh] sm:max-h-[55vh]">
           {summary.rows
             .filter((r) => r.value)
             .map((row) => (

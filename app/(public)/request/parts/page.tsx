@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-
+import { SafeVideo } from "@/components/shared/safe-video";
 import { RequestPartsForm } from "@/components/forms/request-parts-form";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCities, getPartCategories } from "@/lib/supabase/queries";
@@ -24,15 +24,7 @@ export default async function RequestPartsPage() {
           <p className="text-white/80">Опишіть деталь або VIN, магазини нададуть ціну та наявність.</p>
         </div>
         <div className="relative h-48 w-full overflow-hidden rounded-2xl bg-neutral-800 md:h-56 md:w-1/2">
-          <video
-            src="/videos/video_car.mp4"
-            poster="/images/img_banner.gif"
-            className="absolute inset-0 h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
+          <SafeVideo src="/videos/video_car.mp4" poster="/images/img_banner.gif" roundedClassName="rounded-2xl" className="absolute inset-0" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-neutral-900/60 via-neutral-900/30 to-transparent" />
         </div>
       </div>

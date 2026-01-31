@@ -20,6 +20,7 @@ export const metadata = {
 
 import Link from "next/link";
 import { ArrowRight, MapPin } from "lucide-react";
+import { SafeVideo } from "@/components/shared/safe-video";
 
 import { SearchHero } from "@/components/shared/search-hero";
 import { TestimonialsCarousel } from "@/components/shared/testimonials-carousel";
@@ -78,15 +79,7 @@ export default async function HomePage() {
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"></div>
         </div>
         <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl ring-1 ring-neutral-200/60 shadow-sm">
-          <video
-            src="/videos/video_car2.mp4"
-            className="h-full w-full object-cover"
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster=""
-          />
+          <SafeVideo src="/videos/video_car2.mp4" poster="/images/img_banner.gif" roundedClassName="rounded-2xl" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-900/10 via-transparent to-transparent" />
         </div>
       </section>
@@ -116,15 +109,7 @@ export default async function HomePage() {
                 </Link>
               </div>
               <div className="relative overflow-hidden rounded-b-3xl md:rounded-l-none md:rounded-r-3xl">
-                <video
-                  src={card.video}
-                  className="h-full w-full object-cover"
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  poster=""
-                />
+                <SafeVideo src={card.video} poster="/images/img_banner.gif" roundedClassName="rounded-b-3xl md:rounded-l-none md:rounded-r-3xl" />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-white/30 via-white/10 to-transparent" />
               </div>
             </div>

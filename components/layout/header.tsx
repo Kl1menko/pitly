@@ -1,4 +1,4 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -63,7 +63,9 @@ export function Header() {
             </Link>
           </div>
           <button
+            type="button"
             aria-label="Відкрити меню"
+            aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
             className="ml-auto inline-flex items-center justify-center rounded-full border border-neutral-300 p-2 text-neutral-900 shadow-sm transition hover:bg-neutral-100 md:hidden"
           >
@@ -73,7 +75,7 @@ export function Header() {
       </div>
       {/* Mobile menu modal */}
       <div
-        className={`fixed inset-0 z-[9999] md:hidden transition-opacity duration-200 ${
+        className={`fixed inset-0 z-[12000] md:hidden transition-opacity duration-200 ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         role="dialog"
@@ -89,7 +91,7 @@ export function Header() {
 
         <div className="absolute inset-0 flex items-start justify-center pt-6 sm:pt-10">
           <div
-            className={`w-[92vw] max-w-md h-[88vh] max-h-[88vh] overflow-hidden rounded-2xl bg-white shadow-2xl transition-all duration-300 ease-out ${
+            className={`w-[92vw] max-w-md h-[calc(88vh-20px)] max-h-[calc(88vh-20px)] overflow-hidden rounded-2xl bg-white shadow-2xl transition-all duration-300 ease-out ${
               open ? "translate-y-0 scale-100 opacity-100" : "translate-y-6 scale-95 opacity-0"
             }`}
           >
