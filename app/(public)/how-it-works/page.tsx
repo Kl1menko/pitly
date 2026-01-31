@@ -1,7 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { SafeVideo } from "@/components/shared/safe-video";
 import Link from "next/link";
-import { HowTabs } from "@/components/how-it-works/tabs";
 
 export const metadata = {
   title: "Як працює Pitly — кроки для клієнтів та партнерів",
@@ -14,44 +13,14 @@ const faq = [
   { q: "Чи зберігаються мої заявки?", a: "Так, якщо ви авторизовані. Гості отримують дзвінок без кабінету." }
 ];
 
-const tabs = [
-  {
-    id: "clients",
-    label: "Для клієнтів",
-    title: "Ремонт і запчастини без хаосу",
-    bullets: [
-      "Без спам-дзвінків — зв’язок лише після вашого підтвердження.",
-      "Перевірені СТО та магазини, які вже працюють у вашому місті.",
-      "Ціни та терміни до дзвінка: бачите пропозиції — обираєте найкращу.",
-      "Онлайн-запис у 2 кліки, нагадування про візит.",
-      "Зберігаємо історію заявок і статуси, щоб нічого не загубилось."
-    ],
-    cta: { href: "/request/repair", label: "Створити заявку" },
-    extra: "Середній час першої відповіді — до 15 хвилин."
-  },
-  {
-    id: "partners",
-    label: "Для власників СТО чи магазинів",
-    title: "Теплі ліди без реклами",
-    bullets: [
-      "Заявки без холодних дзвінків — клієнт уже зацікавлений.",
-      "Фільтруйте ліди: тип робіт, марка авто, бажаний термін.",
-      "Аналітика: конверсія в дзвінки, популярні послуги, середній чек.",
-      "Рейтинг і відгуки — піднімайте позицію в каталозі.",
-      "Підключення за 1 день: модерація, профіль, прайси й графік."
-    ],
-    cta: { href: "/register", label: "Стати партнером" },
-    extra: "Оплата лише за фактичні заявки, без щомісячної реклами."
-  }
-] as const;
-
 export default function HowItWorksPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4">
-      <div className="grid gap-6 overflow-hidden rounded-3xl bg-neutral-900 p-6 text-white md:grid-cols-[1.3fr_1fr] md:p-8">
+      {/* Hero */}
+      <div className="grid gap-6 overflow-hidden rounded-3xl bg-neutral-900 p-6 text-white md:grid-cols-[1.15fr_1fr] md:p-8 shadow-lg shadow-neutral-900/15">
         <div className="space-y-3">
           <p className="text-sm font-semibold uppercase tracking-wide text-white/70">Про сервіс</p>
-          <h1 className="text-3xl font-bold leading-tight">Як працює Pitly</h1>
+          <h1 className="text-3xl font-bold leading-tight md:text-4xl">Як працює Pitly</h1>
           <p className="text-white/80">
             Заявка займає до 1 хвилини. Партнери бачать ваш запит, дають пропозиції, ви обираєте найкращий варіант.
           </p>
@@ -64,15 +33,68 @@ export default function HowItWorksPage() {
             </Link>
           </div>
         </div>
-        <div className="relative h-52 w-full overflow-hidden rounded-2xl bg-neutral-800">
+        <div className="relative h-56 w-full overflow-hidden rounded-2xl bg-neutral-800 md:h-64">
           <SafeVideo src="/videos/video_car.mp4" poster="/images/img_banner.gif" roundedClassName="rounded-2xl" className="absolute inset-0" />
           <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/60 via-neutral-900/30 to-transparent" />
         </div>
       </div>
 
-      <section className="rounded-3xl bg-white/80 p-4 ring-1 ring-neutral-200 shadow-sm">
-        <HowTabs tabs={tabs} />
-      </section>
+      {/* Чіткий поділ: клієнт vs партнер */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="space-y-4 bg-white/90 p-6 shadow-sm">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Для клієнтів</p>
+            <h2 className="text-2xl font-bold text-neutral-900">Ремонт і запчастини без хаосу</h2>
+          </div>
+          <ul className="space-y-2 text-sm text-neutral-700">
+            <li>• Без спам-дзвінків — зв’язок лише після вашого підтвердження.</li>
+            <li>• Перевірені СТО та магазини у вашому місті.</li>
+            <li>• Пропозиції з ціною та ETA до дзвінка — обираєте найкращу.</li>
+            <li>• Онлайн-запис, нагадування про візит, історія заявок.</li>
+          </ul>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/request/repair"
+              className="rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Створити заявку
+            </Link>
+            <Link
+              href="/request/parts"
+              className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-900 shadow-sm transition hover:-translate-y-0.5"
+            >
+              Запчастини за VIN
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="space-y-4 bg-white/90 p-6 shadow-sm">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Для власників СТО чи магазинів</p>
+            <h2 className="text-2xl font-bold text-neutral-900">Теплі ліди без реклами</h2>
+          </div>
+          <ul className="space-y-2 text-sm text-neutral-700">
+            <li>• Заявки від клієнтів у вашому місті, без холодних дзвінків.</li>
+            <li>• Каталог з рейтингом, відгуками та профілем послуг/категорій.</li>
+            <li>• Відповідайте пропозицією з ціною й терміном — клієнт бачить усе в одному місці.</li>
+            <li>• Кабінет: статуси, чат, базові метрики по конверсії.</li>
+          </ul>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/register"
+              className="rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              Стати партнером
+            </Link>
+            <Link
+              href="/dashboard?demo=partner"
+              className="rounded-full border border-neutral-300 px-5 py-3 text-sm font-semibold text-neutral-900 shadow-sm transition hover:-translate-y-0.5"
+            >
+              Подивитись демо
+            </Link>
+          </div>
+        </Card>
+      </div>
 
       <div className="grid gap-6 md:grid-cols-[1.2fr_1fr]">
         <div className="space-y-3">
