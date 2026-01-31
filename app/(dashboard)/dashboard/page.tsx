@@ -1,228 +1,178 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { CalendarClock, Inbox, PlusCircle, Sparkles, TriangleAlert } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { demoOffers, demoOrders, demoRequests } from "@/lib/data/demo";
+import { demoOffers, demoRequests } from "@/lib/data/demo";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
-const statusMeta: Record<
-  string,
-  { color: string; label: string }
-> = {
-  draft: { color: "bg-neutral-100 text-neutral-800", label: "чернетка" },
-  published: { color: "bg-neutral-100 text-neutral-800", label: "опубліковано" },
-  offers_collecting: { color: "bg-amber-100 text-amber-800", label: "збираємо пропозиції" },
-  client_selected_offer: { color: "bg-blue-100 text-blue-800", label: "обрано пропозицію" },
-  in_progress: { color: "bg-blue-100 text-blue-800", label: "в роботі" },
-  done: { color: "bg-emerald-100 text-emerald-800", label: "виконано" },
-  cancelled: { color: "bg-rose-100 text-rose-800", label: "скасовано" },
-  expired: { color: "bg-neutral-100 text-neutral-800", label: "протерміновано" },
-  sent: { color: "bg-neutral-100 text-neutral-800", label: "надіслано" },
-  viewed: { color: "bg-neutral-100 text-neutral-800", label: "переглянуто" },
-  accepted: { color: "bg-blue-100 text-blue-800", label: "прийнято" },
-  rejected: { color: "bg-rose-100 text-rose-800", label: "відхилено" },
-  expired_offer: { color: "bg-neutral-100 text-neutral-800", label: "прострочено" }
+const statusLabel: Record<string, string> = {
+  draft: "Чернетка",
+  published: "Опубліковано",
+  offers_collecting: "Збираємо пропозиції",
+  client_selected_offer: "Ви обрали виконавця",
+  in_progress: "В роботі",
+  done: "Завершено",
+  cancelled: "Скасовано",
+  expired: "Протерміновано",
+  new: "Нова"
 };
 
-export const dynamic = "force-dynamic";
+const activeStatuses = ["new", "published", "offers_collecting", "client_selected_offer", "in_progress"];
 
 export default function DashboardHomePage() {
-  return (
-    <Suspense fallback={<div className="text-neutral-600">Завантаження кабінету...</div>}>
-      <DashboardHomeContent />
-    </Suspense>
-  );
-}
-
-function DashboardHomeContent() {
-  const searchParams = useSearchParams();
-  const [viewAs, setViewAs] = useState<"client" | "partner">("client");
-
-  useEffect(() => {
-    const demo = searchParams?.get("demo");
-    if (demo === "partner" || demo === "client") {
-      setViewAs(demo);
-    }
-  }, [searchParams]);
-
-  const clientRequests = demoRequests;
-  const orders = demoOrders;
-  const [name, setName] = useState("Клієнт");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setName(localStorage.getItem("pitly_user_name") || "Клієнт");
-    }
-  }, []);
+  const activeRequests = demoRequests.filter((r) => activeStatuses.includes(r.status));
+  const lastActive = activeRequests[0];
+  const newOffers = demoOffers.filter((o) => o.status === "sent");
+  const waiting = newOffers.length;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 animate-pulse rounded-xl bg-neutral-900 p-1">
-            <div className="h-full w-full rounded-lg bg-white" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-neutral-900">Кабінет</p>
-            <h1 className="text-2xl font-bold">Вітаємо, {name}</h1>
-            <p className="text-neutral-600">Швидкий огляд ваших заявок та пропозицій.</p>
-          </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-neutral-500">Кабінет клієнта</p>
+          <h1 className="text-2xl font-bold text-neutral-900">Швидкий огляд</h1>
         </div>
-        <div className="flex w-full justify-between rounded-full border border-neutral-200 p-1 text-sm font-semibold sm:w-auto">
-          <button
-            onClick={() => setViewAs("client")}
-            className={`flex-1 rounded-full px-3 py-1 ${viewAs === "client" ? "bg-neutral-900 text-white" : "text-neutral-700"}`}
-          >
-            Клієнт
-          </button>
-          <button
-            onClick={() => setViewAs("partner")}
-            className={`flex-1 rounded-full px-3 py-1 ${viewAs === "partner" ? "bg-neutral-900 text-white" : "text-neutral-700"}`}
-          >
-            Партнер
-          </button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild size="sm" className="rounded-full bg-neutral-900 px-4 hover:-translate-y-0.5 hover:shadow-md">
+            <Link href="/request/repair">Заявка на ремонт</Link>
+          </Button>
+          <Button asChild size="sm" variant="secondary" className="rounded-full px-4 hover:-translate-y-0.5 hover:shadow-md">
+            <Link href="/request/parts">Заявка на запчастини</Link>
+          </Button>
         </div>
       </div>
 
-      {viewAs === "client" ? (
-        <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-          <Card className="space-y-4 p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-900 text-sm font-bold text-white">
-                  {name.slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-600">Мої заявки</p>
-                  <p className="text-2xl font-bold text-neutral-900">{clientRequests.length}</p>
-                </div>
-              </div>
-              <Button asChild className="w-full sm:w-auto">
-                <Link href="/request/repair">Нова заявка</Link>
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {clientRequests.map((r) => (
-                <div key={r.id} className="rounded-xl border border-neutral-200 p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">
-                      {r.type === "repair" ? "Ремонт" : "Запчастини"}
-                    </p>
-                    <Badge className={statusMeta[r.status]?.color ?? "bg-neutral-100 text-neutral-800"}>
-                      {statusMeta[r.status]?.label ?? r.status}
-                    </Badge>
-                  </div>
-                  <p className="mt-1 font-semibold text-neutral-900">{r.problem_description || r.part_query || "Заявка"}</p>
-                  <p className="text-sm text-neutral-600">
-                    {r.city_id ? `Місто: ${r.city_id}` : ""}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard label="Активні заявки" value={activeRequests.length} icon={<Inbox className="h-4 w-4" />} />
+        <StatCard label="Нові пропозиції" value={newOffers.length} icon={<Sparkles className="h-4 w-4" />} />
+        <StatCard label="Очікують відповіді" value={waiting} icon={<CalendarClock className="h-4 w-4" />} />
+      </div>
 
-          <Card className="space-y-3 p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-neutral-600">Пропозиції по заявках</p>
-              <Button asChild variant="secondary" size="sm" className="hidden sm:inline-flex">
-                <Link href="/dashboard/requests">Детальніше</Link>
-              </Button>
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_1fr]">
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-neutral-600">Остання активна заявка</p>
+              <h2 className="text-xl font-semibold text-neutral-900">{lastActive ? "Перевірте пропозиції" : "Немає активних"}</h2>
             </div>
-            <div className="space-y-2">
-              {demoOffers.map((o) => (
-                <div key={o.id} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3">
-                  <div>
-                    <p className="text-sm text-neutral-600">Заявка {o.request_id}</p>
-                    <p className="font-semibold text-neutral-900">
-                      ₴{o.price ?? "—"} · {o.eta_days ?? "—"} дн
-                    </p>
-                  </div>
-                  <Badge className={statusMeta[o.status]?.color ?? "bg-neutral-100 text-neutral-800"}>
-                    {statusMeta[o.status]?.label ?? o.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-            <Button asChild variant="secondary" size="sm" className="w-full sm:hidden">
-              <Link href="/dashboard/requests">Детальніше</Link>
-            </Button>
-          </Card>
-        </div>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card className="space-y-3 p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-neutral-600">Вхідні заявки</p>
-              <Button asChild variant="secondary" size="sm" className="hidden sm:inline-flex">
-                <Link href="/dashboard/requests">Стрічка</Link>
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {clientRequests.map((r) => (
-                <div key={r.id} className="rounded-xl border border-neutral-200 p-3">
-                  <p className="text-sm uppercase tracking-wide text-neutral-500">{r.type === "repair" ? "Ремонт" : "Запчастини"}</p>
-                  <p className="font-semibold text-neutral-900">{r.problem_description || r.part_query || "Заявка"}</p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Button size="sm" variant="primary">
-                      Створити пропозицію
-                    </Button>
-                    <Button size="sm" variant="secondary">
-                      Деталі
-                    </Button>
-                  </div>
-                </div>
-                ))}
-            </div>
-            <Button asChild variant="secondary" size="sm" className="w-full sm:hidden">
-              <Link href="/dashboard/requests">Стрічка</Link>
-            </Button>
-          </Card>
-
-          <div className="space-y-4">
-            <Card className="space-y-3 p-4 sm:p-6">
-              <p className="text-sm text-neutral-600">Активні замовлення</p>
-              <div className="space-y-2">
-                {orders.map((o) => (
-                  <div key={o.id} className="flex items-center justify-between rounded-xl border border-neutral-200 p-3">
-                    <div>
-                      <p className="text-sm text-neutral-600">Замовлення {o.id}</p>
-                      <p className="font-semibold text-neutral-900">{statusMeta[o.status]?.label ?? o.status}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="secondary">
-                        Оновити статус
-                      </Button>
-                      <Button size="sm" variant="primary">
-                        Чат
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            <Card className="space-y-2 bg-neutral-50 p-4 sm:p-6">
-              <p className="text-sm font-semibold text-neutral-900">Порівняння з конкурентами</p>
-              <ul className="space-y-1 text-sm text-neutral-700">
-                <li>• Ціни, відгуки, популярні послуги поруч</li>
-                <li>• Власник бачить, де втрачає клієнтів</li>
-              </ul>
-              <hr className="border-neutral-200" />
-              <p className="text-sm font-semibold text-neutral-900">SEO + маркетинг-дашборд</p>
-              <ul className="space-y-1 text-sm text-neutral-700">
-                <li>• 📍 Локальний рейтинг</li>
-                <li>• 📞 Звідки дзвінки</li>
-                <li>• 💵 Які послуги дають прибуток</li>
-              </ul>
-              <p className="text-xs text-neutral-500">Просто й зрозуміло — дані скоро доступні в кабінеті.</p>
-            </Card>
+            <Badge className="rounded-full bg-amber-100 text-amber-800">Заявки</Badge>
           </div>
+          {lastActive ? (
+            <div className="space-y-3 rounded-2xl border border-neutral-200 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-neutral-500">
+                    {lastActive.type === "repair" ? "Ремонт" : "Запчастини"}
+                  </p>
+                  <p className="text-lg font-semibold text-neutral-900">
+                    {lastActive.problem_description || lastActive.part_query || "Заявка"}
+                  </p>
+                  <p className="text-sm text-neutral-600">Місто: {lastActive.city_id}</p>
+                </div>
+                <Badge variant="secondary">{statusLabel[lastActive.status] ?? lastActive.status}</Badge>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                <TinyStat label="Партнери бачать" value="18" />
+                <TinyStat label="Пропозицій отримано" value={demoOffers.filter((o) => o.request_id === lastActive.id).length} />
+                <TinyStat label="Статус" value={statusLabel[lastActive.status] ?? lastActive.status} />
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button asChild className="rounded-full bg-neutral-900 px-4 hover:-translate-y-0.5 hover:shadow-md">
+                  <Link href={`/dashboard/requests/${lastActive.id}`}>Переглянути пропозиції</Link>
+                </Button>
+                <Button asChild variant="secondary" className="rounded-full px-4 hover:-translate-y-0.5 hover:shadow-md">
+                  <Link href="/request/repair">Нова заявка</Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-neutral-200 p-4 text-neutral-600">Активних заявок немає.</div>
+          )}
+        </Card>
+
+        <Card className="space-y-4 rounded-2xl border border-neutral-100 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-neutral-900">Швидкі дії</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <QuickAction href="/request/repair" title="Заявка на ремонт" />
+            <QuickAction href="/request/parts" title="Заявка на запчастину" />
+            <QuickAction href="/dashboard/cars" title="Додати авто" />
+            <QuickAction href="/dashboard/requests" title="Мої заявки" />
+          </div>
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+            <div className="flex items-start gap-2">
+              <TriangleAlert className="mt-0.5 h-4 w-4 text-amber-600" />
+              <p>Контакти партнерів відкриються після того, як ви оберете пропозицію. Жодного спаму.</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="rounded-2xl border border-neutral-100 p-5 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-neutral-600">Активні заявки</p>
+            <h3 className="text-lg font-semibold text-neutral-900">Швидкий список</h3>
+          </div>
+          <Button asChild size="sm" variant="secondary" className="rounded-full px-4">
+            <Link href="/dashboard/requests">Усі заявки</Link>
+          </Button>
         </div>
-      )}
+        <div className="mt-3 grid gap-3">
+          {activeRequests.map((r) => (
+            <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 p-3">
+              <Badge variant="secondary" className="rounded-full">
+                {r.type === "repair" ? "Ремонт" : "Запчастини"}
+              </Badge>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-neutral-900">{r.problem_description || r.part_query || "Заявка"}</p>
+                <p className="text-xs text-neutral-600">Місто: {r.city_id}</p>
+              </div>
+              <Badge className="rounded-full">{statusLabel[r.status] ?? r.status}</Badge>
+              <Button asChild size="sm" className="rounded-full px-4">
+                <Link href={`/dashboard/requests/${r.id}`}>Відкрити</Link>
+              </Button>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
+  );
+}
+
+function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+  return (
+    <Card className="flex items-center gap-3 rounded-2xl border border-neutral-100 p-4 shadow-sm">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-sm">{icon}</div>
+      <div>
+        <p className="text-sm text-neutral-500">{label}</p>
+        <p className="text-2xl font-bold text-neutral-900">{value}</p>
+      </div>
+    </Card>
+  );
+}
+
+function TinyStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-neutral-100 bg-neutral-50 px-3 py-2">
+      <p className="text-xs text-neutral-500">{label}</p>
+      <p className="text-sm font-semibold text-neutral-900">{value}</p>
+    </div>
+  );
+}
+
+function QuickAction({ href, title }: { href: string; title: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-xl border border-neutral-100 px-3 py-3 text-sm font-semibold text-neutral-900 transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      {title}
+      <PlusCircle className="h-4 w-4 text-neutral-500" />
+    </Link>
   );
 }

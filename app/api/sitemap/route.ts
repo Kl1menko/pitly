@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { demoCities, demoPartners } from "@/lib/data/demo";
+import { demoCities, allDemoPartners } from "@/lib/data/demo";
 
 export async function GET() {
   const urls = [
@@ -8,7 +8,7 @@ export async function GET() {
     "/cities",
     "/how-it-works",
     ...demoCities.flatMap((city) => [`/${city.slug}/sto`, `/${city.slug}/shops`]),
-    ...demoPartners.map((p) => (p.type === "sto" ? `/sto/${p.slug}` : `/shop/${p.slug}`))
+    ...allDemoPartners.map((p) => (p.type === "sto" ? `/sto/${p.slug}` : `/shop/${p.slug}`))
   ];
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>

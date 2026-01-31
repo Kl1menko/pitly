@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Loader2, Upload } from "lucide-react";
 import { z } from "zod";
@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { uploadPhoto } from "@/lib/supabase/storage";
-import { type CarBrand, type City, type Service } from "@/lib/types";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { type CarBrand, type City, type Service, type CarModel } from "@/lib/types";
 import { repairRequestSchema } from "@/lib/validators/requests";
 import { RequestConfirmDialog } from "@/components/forms/request-confirm-dialog";
 
@@ -35,6 +35,8 @@ export function RequestRepairForm({
   const cityParam = params.get("city") ?? "";
   const partnerParam = params.get("partner") ?? "";
   const [uploading, setUploading] = useState(false);
+  const [models, setModels] = useState<CarModel[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
@@ -49,9 +51,43 @@ export function RequestRepairForm({
       contact_telegram: "",
       extra_services: [],
       services_multi: [],
+      car_model_id: "",
       car_model_name: ""
     }
   });
+
+  const brandId = form.watch("car_brand_id") ?? "";
+
+  useEffect(() => {
+    let active = true;
+    if (!brandId) {
+      setModels([]);
+      form.setValue("car_model_id", "");
+      return;
+    }
+    const load = async () => {
+      setLoadingModels(true);
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from("car_models")
+        .select("id,name,slug,brand_id")
+        .eq("brand_id", brandId)
+        .order("name");
+      if (!active) return;
+      if (error) {
+        console.warn("load car models error", error);
+        setModels([]);
+      } else {
+        setModels((data as CarModel[]) ?? []);
+      }
+      setLoadingModels(false);
+      form.setValue("car_model_id", "");
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [brandId, form]);
 
   const handlePreview = async (values: FormValues) => {
     const fileList = (form.getValues("photos") as unknown as FileList) ?? [];
@@ -68,12 +104,12 @@ export function RequestRepairForm({
   };
 
   const sendRequest = async (values: FormValues) => {
-    const supabase = getSupabaseBrowserClient();
     try {
       setUploading(true);
-      const { data, error } = await supabase
-        .from("requests")
-        .insert({
+      const res = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           type: "repair",
           city_id: values.city_id,
           car_brand_id: values.car_brand_id || null,
@@ -85,14 +121,11 @@ export function RequestRepairForm({
           contact_phone: values.contact_phone,
           contact_name: values.contact_name,
           target_partner_id: values.target_partner_id || null,
-          service_id: values.services_multi?.[0] ?? null,
-          extra_services: values.services_multi?.slice(1) ?? [],
-          status: "new"
+          services_multi: values.services_multi
         })
-        .select("id")
-        .single();
-
-      if (error) throw error;
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "request_failed");
 
       if (values.contact_telegram) {
         await fetch("/api/request-link", {
@@ -138,7 +171,26 @@ export function RequestRepairForm({
         </div>
         <div>
           <Label>Модель авто</Label>
-          <Input placeholder="Наприклад: Civic, Octavia A7" {...form.register("car_model_name")} />
+          <Select
+            value={form.watch("car_model_id") ?? ""}
+            onChange={(e) => form.setValue("car_model_id", e.target.value)}
+            disabled={!brandId || loadingModels || models.length === 0}
+          >
+            <option value="">{loadingModels ? "Завантаження..." : "Оберіть модель"}</option>
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </Select>
+          {!brandId && <p className="mt-1 text-xs text-neutral-500">Спершу оберіть марку.</p>}
+          {brandId && !loadingModels && models.length === 0 && (
+            <p className="mt-1 text-xs text-neutral-500">Для цієї марки моделі поки не додані. Можете вписати вручну.</p>
+          )}
+        </div>
+        <div>
+          <Label>Інша модель (якщо немає у списку)</Label>
+          <Input placeholder="Наприклад: Octavia A7" {...form.register("car_model_name")} />
         </div>
         <div className="md:col-span-2">
           <Label>Послуги (можна кілька)</Label>

@@ -5,9 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const pathname = usePathname();
 
   const close = () => setOpen(false);
@@ -29,6 +31,21 @@ export function Header() {
     };
   }, [open]);
 
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-200 bg-white/95 backdrop-blur">
       <div className="mx-auto max-w-6xl px-3 sm:px-4">
@@ -49,18 +66,34 @@ export function Header() {
             ))}
           </nav>
           <div className="ml-auto hidden items-center gap-2 md:flex">
-            <Link
-              href="/login"
-              className="flex items-center gap-2 rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800 sm:px-4"
-            >
-              Увійти
-            </Link>
-            <Link
-              href="/register"
-              className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-neutral-900 ring-1 ring-neutral-300 shadow-sm transition hover:-translate-y-0.5 sm:px-4"
-            >
-              Стати партнером
-            </Link>
+            {userEmail ? (
+              <>
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800 sm:px-4"
+                >
+                  Кабінет
+                </Link>
+                <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-300">
+                  <Image src="/images/icons/car_icon.webp" alt="User avatar" width={40} height={40} className="h-full w-full object-cover" />
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 rounded-full bg-neutral-900 px-3 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800 sm:px-4"
+                >
+                  Увійти
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex items-center gap-2 rounded-full bg-white px-3 py-2 text-sm font-semibold text-neutral-900 ring-1 ring-neutral-300 shadow-sm transition hover:-translate-y-0.5 sm:px-4"
+                >
+                  Стати партнером
+                </Link>
+              </>
+            )}
           </div>
           <button
             type="button"
@@ -126,20 +159,40 @@ export function Header() {
               </nav>
 
               <div className="mt-auto flex flex-col gap-3 pt-6 pb-1">
-                <Link
-                  href="/login"
-                  onClick={close}
-                  className="w-full rounded-full bg-neutral-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800"
-                >
-                  Увійти
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={close}
-                  className="w-full rounded-full border border-neutral-300 px-4 py-3 text-center text-sm font-semibold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
-                >
-                  Стати партнером
-                </Link>
+                {userEmail ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      onClick={close}
+                      className="w-full rounded-full bg-neutral-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800"
+                    >
+                      Кабінет
+                    </Link>
+                    <div className="flex items-center justify-center gap-2 text-sm text-neutral-700">
+                      <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-neutral-100 ring-1 ring-neutral-200">
+                        <Image src="/images/icons/car_icon.webp" alt="User avatar" width={40} height={40} className="h-full w-full object-cover" />
+                      </span>
+                      <span className="truncate">{userEmail}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      onClick={close}
+                      className="w-full rounded-full bg-neutral-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-md transition hover:bg-neutral-800"
+                    >
+                      Увійти
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={close}
+                      className="w-full rounded-full border border-neutral-300 px-4 py-3 text-center text-sm font-semibold text-neutral-900 shadow-sm transition hover:bg-neutral-50"
+                    >
+                      Стати партнером
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

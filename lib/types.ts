@@ -28,6 +28,13 @@ export interface CarBrand {
   slug: string;
 }
 
+export interface CarModel {
+  id: string;
+  brand_id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Partner {
   id: string;
   type: PartnerType;
@@ -108,6 +115,17 @@ export interface Order {
   scheduled_at?: string | null;
   closed_at?: string | null;
   created_at?: string;
+}
+
+export interface ClientCar {
+  id: string;
+  brand: string;
+  model: string;
+  year?: number | null;
+  vin?: string | null;
+  notes?: string | null;
+  mileage_km?: number | null;
+  last_service?: string | null;
 }
 
 export interface Message {

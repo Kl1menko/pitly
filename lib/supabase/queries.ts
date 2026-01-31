@@ -1,4 +1,4 @@
-import { demoBrands, demoCities, demoPartCategories, demoPartners, demoServices } from "@/lib/data/demo";
+import { demoBrands, demoCities, demoPartCategories, allDemoPartners, demoServices } from "@/lib/data/demo";
 import { supabaseReady, getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   type Partner,
@@ -8,7 +8,8 @@ import {
   type City,
   type Service,
   type PartCategory,
-  type CarBrand
+  type CarBrand,
+  type CarModel
 } from "@/lib/types";
 
 export async function getCities(): Promise<City[]> {
@@ -49,9 +50,9 @@ export async function getPartnersByCity(params: {
   filters?: PartnerFilters;
 }): Promise<Partner[]> {
   const { type, cityId, citySlug, filters } = params;
-  if (!supabaseReady) {
+  const fallback = () => {
     const city = cityId ? demoCities.find((c) => c.id === cityId) : demoCities.find((c) => c.slug === citySlug);
-    let list = demoPartners.filter((p) => p.type === type && p.city_id === city?.id && p.status === "active");
+    let list = allDemoPartners.filter((p) => p.type === type && p.city_id === city?.id && p.status === "active");
     if (filters?.services?.length && type === "sto") {
       list = list.filter((p) =>
         filters.services!.every((s) =>
@@ -85,6 +86,10 @@ export async function getPartnersByCity(params: {
       list = [...list].sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
     }
     return list;
+  };
+
+  if (!supabaseReady) {
+    return fallback();
   }
 
   const supabase = getSupabaseServerClient();
@@ -93,7 +98,7 @@ export async function getPartnersByCity(params: {
     : citySlug
       ? await getCityBySlug(citySlug)
       : null;
-  if (!city) return [];
+  if (!city) return fallback();
 
   const { data, error } = await supabase
     .from("partners")
@@ -106,7 +111,7 @@ export async function getPartnersByCity(params: {
 
   if (error) {
     console.warn("Supabase getPartnersByCity error", error);
-    return [];
+    return fallback();
   }
 
   type RawPartner = Partner & {
@@ -166,7 +171,7 @@ export async function getPartnersByCity(params: {
 
 export async function getPartnerBySlug(type: PartnerType, slug: string): Promise<Partner | null> {
   if (!supabaseReady) {
-    const p = demoPartners.find((x) => x.slug === slug && x.type === type);
+    const p = allDemoPartners.find((x) => x.slug === slug && x.type === type);
     if (!p) return null;
     return {
       ...p,
@@ -196,7 +201,21 @@ export async function getPartnerBySlug(type: PartnerType, slug: string): Promise
 
   if (error) {
     console.warn("Supabase getPartnerBySlug error", error);
-    return null;
+    const p = allDemoPartners.find((x) => x.slug === slug && x.type === type);
+    if (!p) return null;
+    return {
+      ...p,
+      services: p.services?.map((s) =>
+        typeof s === "string"
+          ? demoServices.find((svc) => svc.slug === s || svc.id === s) || { id: s, name_ua: s }
+          : { id: s.id, name_ua: s.name_ua }
+      ),
+      categories: p.categories?.map((c) =>
+        typeof c === "string"
+          ? demoPartCategories.find((cat) => cat.slug === c || cat.id === c) || { id: c, name_ua: c }
+          : { id: c.id, name_ua: c.name_ua }
+      )
+    };
   }
   return {
     ...data,
@@ -244,6 +263,17 @@ export async function getBrands(): Promise<CarBrand[]> {
     return demoBrands;
   }
   return data ?? demoBrands;
+}
+
+export async function getModelsByBrand(brandId: string): Promise<CarModel[]> {
+  if (!supabaseReady) return [];
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase.from("car_models").select("*").eq("brand_id", brandId).order("name");
+  if (error) {
+    console.warn("Supabase getModelsByBrand error", error);
+    return [];
+  }
+  return (data as CarModel[]) ?? [];
 }
 
 // --- Offers & Orders ---

@@ -11,11 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { type CarBrand, type City, type PartCategory } from "@/lib/types";
+import { type CarBrand, type City, type PartCategory, type CarModel } from "@/lib/types";
 import { partsRequestSchema } from "@/lib/validators/requests";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RequestConfirmDialog } from "@/components/forms/request-confirm-dialog";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type FormValues = z.infer<typeof partsRequestSchema>;
 
@@ -34,6 +34,8 @@ export function RequestPartsForm({
   const partnerParam = params.get("partner") ?? "";
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
+  const [models, setModels] = useState<CarModel[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
   const form = useForm<FormValues>({
     resolver: zodResolver(partsRequestSchema),
     defaultValues: {
@@ -43,9 +45,9 @@ export function RequestPartsForm({
       part_categories: [],
       part_query: "",
       car_model_name: "",
+      car_model_id: "",
       car_year: undefined,
       car_brand_id: undefined,
-      car_model_id: undefined,
       contact_name: "",
       delivery_needed: false,
       contact_phone: "",
@@ -53,17 +55,50 @@ export function RequestPartsForm({
     }
   });
 
+  const brandId = form.watch("car_brand_id") ?? "";
+
+  useEffect(() => {
+    let active = true;
+    if (!brandId) {
+      setModels([]);
+      form.setValue("car_model_id", "");
+      return;
+    }
+    const load = async () => {
+      setLoadingModels(true);
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from("car_models")
+        .select("id,name,slug,brand_id")
+        .eq("brand_id", brandId)
+        .order("name");
+      if (!active) return;
+      if (error) {
+        console.warn("load car models error", error);
+        setModels([]);
+      } else {
+        setModels((data as CarModel[]) ?? []);
+      }
+      setLoadingModels(false);
+      form.setValue("car_model_id", "");
+    };
+    load();
+    return () => {
+      active = false;
+    };
+  }, [brandId, form]);
+
   const handlePreview = async (values: FormValues) => {
     setPendingValues(values);
     setConfirmOpen(true);
   };
 
   const sendRequest = async (values: FormValues) => {
-    const supabase = getSupabaseBrowserClient();
     try {
-      const { data, error } = await supabase
-        .from("requests")
-        .insert({
+      const res = await fetch("/api/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           type: "parts",
           city_id: values.city_id,
           car_brand_id: values.car_brand_id || null,
@@ -71,17 +106,15 @@ export function RequestPartsForm({
           car_model_name: values.car_model_name || null,
           car_year: values.car_year || null,
           vin: values.vin?.trim().toUpperCase() || null,
-          part_category_id: values.part_categories?.[0],
-          extra_part_categories: values.part_categories?.slice(1) ?? [],
+          part_categories: values.part_categories,
           part_query: values.part_query,
           contact_phone: values.contact_phone,
           contact_name: values.contact_name,
-          target_partner_id: values.target_partner_id || null,
-          status: "new"
+          target_partner_id: values.target_partner_id || null
         })
-        .select("id")
-        .single();
-      if (error) throw error;
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "request_failed");
 
       if (values.contact_telegram) {
         await fetch("/api/request-link", {
@@ -125,6 +158,25 @@ export function RequestPartsForm({
         </div>
         <div>
           <Label>Модель авто</Label>
+          <Select
+            value={form.watch("car_model_id") ?? ""}
+            onChange={(e) => form.setValue("car_model_id", e.target.value)}
+            disabled={!brandId || loadingModels || models.length === 0}
+          >
+            <option value="">{loadingModels ? "Завантаження..." : "Оберіть модель"}</option>
+            {models.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </Select>
+          {!brandId && <p className="mt-1 text-xs text-neutral-500">Спершу оберіть марку.</p>}
+          {brandId && !loadingModels && models.length === 0 && (
+            <p className="mt-1 text-xs text-neutral-500">Для цієї марки моделі поки не додані. Можете вписати вручну.</p>
+          )}
+        </div>
+        <div>
+          <Label>Інша модель (якщо немає у списку)</Label>
           <Input placeholder="Наприклад: Focus Mk3" {...form.register("car_model_name")} />
         </div>
         <div>

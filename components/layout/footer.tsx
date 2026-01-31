@@ -75,21 +75,6 @@ export function Footer() {
           </div>
         </div>
       </footer>
-
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pb-6 pt-4 sm:flex-row sm:gap-4">
-        <Link
-          href="/dashboard?demo=client"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-neutral-900 px-4 py-3 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
-        >
-          Демо кабінет клієнта (фейк)
-        </Link>
-        <Link
-          href="/dashboard?demo=partner"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-neutral-900 ring-1 ring-neutral-300 shadow-sm transition hover:-translate-y-0.5"
-        >
-          Демо кабінет СТО / магазину (фейк)
-        </Link>
-      </div>
     </>
   );
 }

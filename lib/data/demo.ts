@@ -1,5 +1,5 @@
 import { type CarBrand, type City, type PartCategory, type Partner, type Service } from "@/lib/types";
-import { type Offer, type Order } from "@/lib/types";
+import { type Offer, type Order, type ClientCar } from "@/lib/types";
 
 export const demoCities: City[] = [
   { id: "city-kyiv", name_ua: "Київ", slug: "kyiv", region_ua: "Київська", lat: 50.4501, lng: 30.5234 },
@@ -23,9 +23,7 @@ export const demoCities: City[] = [
   { id: "city-uzhhorod", name_ua: "Ужгород", slug: "uzhhorod", region_ua: "Закарпатська", lat: 48.6208, lng: 22.2879 },
   { id: "city-lutsk", name_ua: "Луцьк", slug: "lutsk", region_ua: "Волинська", lat: 50.7472, lng: 25.3254 },
   { id: "city-rivne", name_ua: "Рівне", slug: "rivne", region_ua: "Рівненська", lat: 50.6199, lng: 26.2516 },
-  { id: "city-chernivtsi", name_ua: "Чернівці", slug: "chernivtsi", region_ua: "Чернівецька", lat: 48.2915, lng: 25.9403 },
-  { id: "city-donetsk", name_ua: "Донецьк", slug: "donetsk", region_ua: "Донецька", lat: 48.0159, lng: 37.8029 },
-  { id: "city-luhansk", name_ua: "Луганськ", slug: "luhansk", region_ua: "Луганська", lat: 48.574, lng: 39.3078 }
+  { id: "city-chernivtsi", name_ua: "Чернівці", slug: "chernivtsi", region_ua: "Чернівецька", lat: 48.2915, lng: 25.9403 }
 ];
 
 export const demoServices: Service[] = [
@@ -235,6 +233,52 @@ export const demoPartners: Partner[] = [
   }
 ];
 
+// Генеруємо мінімальні демо партнери для міст, де ще немає записів
+const cityHasType = (cityId: string, type: Partner["type"]) =>
+  demoPartners.some((p) => p.city_id === cityId && p.type === type);
+
+const generatedPartners: Partner[] = demoCities.flatMap((city) => {
+  const items: Partner[] = [];
+  if (!cityHasType(city.id, "sto")) {
+    items.push({
+      id: `sto-${city.slug}`,
+      type: "sto",
+      name: `${city.name_ua} СТО`,
+      slug: `${city.slug}-sto`,
+      city_id: city.id,
+      address: `Центр, ${city.name_ua}`,
+      phone: "+380631234567",
+      description: "Базовий сервіс: ходова, гальма, масло.",
+      verified: false,
+      status: "active",
+      rating_avg: 4.2,
+      services: [mapService("diagnostyka"), mapService("khodova"), mapService("zamina-masla")],
+      brands: ["toyota", "volkswagen", "skoda"]
+    });
+  }
+  if (!cityHasType(city.id, "shop")) {
+    items.push({
+      id: `shop-${city.slug}`,
+      type: "shop",
+      name: `${city.name_ua} Запчастини`,
+      slug: `${city.slug}-shop`,
+      city_id: city.id,
+      address: `Центр, ${city.name_ua}`,
+      phone: "+380951112233",
+      description: "Популярні категорії, доставка за містом узгоджується.",
+      verified: false,
+      status: "active",
+      rating_avg: 4.1,
+      categories: [mapCategory("filtry"), mapCategory("masla-ta-ridyny"), mapCategory("pidviska")],
+      delivery_available: true,
+      brands: ["toyota", "renault", "ford"]
+    });
+  }
+  return items;
+});
+
+export const allDemoPartners: Partner[] = [...demoPartners, ...generatedPartners];
+
 export const demoRequests = [
   {
     id: "req-1",
@@ -306,5 +350,28 @@ export const demoOrders: Order[] = [
     client_id: "client-1",
     partner_id: "partner-shop-1",
     status: "fulfilled"
+  }
+];
+
+export const demoCars: ClientCar[] = [
+  {
+    id: "car-1",
+    brand: "Toyota",
+    model: "Corolla",
+    year: 2015,
+    vin: "JTNKU3JE6F1234567",
+    mileage_km: 168000,
+    last_service: "2024-11-15",
+    notes: "Заміна гальмівних колодок, планова ТО кожні 10 тис."
+  },
+  {
+    id: "car-2",
+    brand: "Volkswagen",
+    model: "Passat B8",
+    year: 2018,
+    vin: "WVWZZZ3CZJE000001",
+    mileage_km: 124500,
+    last_service: "2025-02-01",
+    notes: "Нові шини, наступне ТО через 7 тис."
   }
 ];
