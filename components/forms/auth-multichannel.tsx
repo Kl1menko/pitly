@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Mail, Smartphone, Send as SendIcon, MessageCircle, LogIn } from "lucide-react";
+import { Mail, Smartphone, Send as SendIcon, MessageCircle, Chrome } from "lucide-react";
 
 type Mode = "login" | "register";
 type Channel = "email" | "phone" | "telegram" | "viber" | "google";
@@ -88,30 +88,50 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
 
   return (
     <div className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:p-6">
-      <div className="grid gap-2 text-sm font-semibold">
+      <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
         {(["email", "phone", "telegram", "viber", "google"] as Channel[]).map((ch) => {
           const active = channel === ch;
+          const icon =
+            ch === "email" ? <Mail className="h-4 w-4" /> : ch === "phone" ? (
+              <Smartphone className="h-4 w-4" />
+            ) : ch === "telegram" ? (
+              <SendIcon className="h-4 w-4" />
+            ) : ch === "viber" ? (
+              <MessageCircle className="h-4 w-4" />
+            ) : (
+              <Chrome className="h-4 w-4" />
+            );
+          const label =
+            ch === "email" ? "Email + пароль" : ch === "phone" ? "SMS" : ch === "telegram" ? "Telegram" : ch === "viber" ? "Viber" : "Google";
+          const hint =
+            ch === "email"
+              ? "Класичний вхід"
+              : ch === "phone"
+              ? "Код на номер"
+              : ch === "telegram"
+              ? "Отримаєте лінк"
+              : ch === "viber"
+              ? "Код у Viber"
+              : "OAuth";
           return (
             <button
               key={ch}
               onClick={() => setChannel(ch)}
               className={cn(
-                "flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition border",
-                active ? "border-neutral-900 bg-neutral-900 text-white shadow-sm" : "border-transparent bg-neutral-100 text-neutral-800"
+                "flex items-center justify-between gap-3 rounded-xl border px-3 py-3 text-left transition",
+                active ? "border-neutral-900 bg-neutral-900 text-white shadow-sm" : "border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-300"
               )}
             >
-              {ch === "email" && <Mail className="h-4 w-4" />}
-              {ch === "phone" && <Smartphone className="h-4 w-4" />}
-              {ch === "telegram" && <SendIcon className="h-4 w-4" />}
-              {ch === "viber" && <MessageCircle className="h-4 w-4" />}
-              {ch === "google" && <LogIn className="h-4 w-4" />}
-              <span className="flex-1 text-center">
-                {ch === "email" && "Email"}
-                {ch === "phone" && "SMS"}
-                {ch === "telegram" && "Telegram"}
-                {ch === "viber" && "Viber"}
-                {ch === "google" && "Google"}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl text-neutral-900", active ? "bg-white text-neutral-900" : "bg-white")}>
+                  {icon}
+                </span>
+                <div className="text-left">
+                  <p className="font-semibold leading-tight">{label}</p>
+                  <p className={cn("text-xs", active ? "text-white/80" : "text-neutral-600")}>{hint}</p>
+                </div>
+              </div>
+              <span className={cn("text-xs uppercase tracking-[0.08em]", active ? "text-white/80" : "text-neutral-500")}>Обрати</span>
             </button>
           );
         })}
