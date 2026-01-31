@@ -23,6 +23,7 @@ import { ArrowRight, MapPin } from "lucide-react";
 import { SafeVideo } from "@/components/shared/safe-video";
 
 import { SearchHero } from "@/components/shared/search-hero";
+import { HeroThree } from "@/components/sections/hero-three";
 import { TestimonialsCarousel } from "@/components/shared/testimonials-carousel";
 import { Card } from "@/components/ui/card";
 import { getCities } from "@/lib/supabase/queries";
@@ -283,6 +284,8 @@ export default async function HomePage() {
           </Link>
         </Card>
       </section>
+
+      <HeroThree />
 
       <TestimonialsCarousel />
     </div>

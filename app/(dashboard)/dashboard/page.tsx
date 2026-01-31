@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CalendarClock, Inbox, PlusCircle, Sparkles, TriangleAlert } from "lucide-react";
 
-import { demoOffers, demoRequests } from "@/lib/data/demo";
+import { demoOffers, demoRequests, demoCities } from "@/lib/data/demo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +27,7 @@ export default function DashboardHomePage() {
   const lastActive = activeRequests[0];
   const newOffers = demoOffers.filter((o) => o.status === "sent");
   const waiting = newOffers.length;
+  const lastActiveCity = lastActive ? demoCities.find((c) => c.id === lastActive.city_id)?.name_ua || lastActive.city_id : "";
 
   return (
     <div className="space-y-6">
@@ -70,9 +71,11 @@ export default function DashboardHomePage() {
                   <p className="text-lg font-semibold text-neutral-900">
                     {lastActive.problem_description || lastActive.part_query || "Заявка"}
                   </p>
-                  <p className="text-sm text-neutral-600">Місто: {lastActive.city_id}</p>
+                  <p className="text-sm text-neutral-600">Місто: {lastActiveCity}</p>
                 </div>
-                <Badge variant="secondary">{statusLabel[lastActive.status] ?? lastActive.status}</Badge>
+                <Badge className="rounded-full bg-neutral-100 text-neutral-800">
+                  {statusLabel[lastActive.status] ?? lastActive.status}
+                </Badge>
               </div>
 
               <div className="grid gap-2 sm:grid-cols-3">
