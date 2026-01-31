@@ -127,8 +127,8 @@ export default function DashboardHomePage() {
         </div>
         <div className="mt-3 grid gap-3">
           {activeRequests.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 p-3">
-              <Badge variant="secondary" className="rounded-full">
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 p-3">
+              <Badge className="rounded-full bg-neutral-100 text-neutral-800">
                 {r.type === "repair" ? "Ремонт" : "Запчастини"}
               </Badge>
               <div className="min-w-0 flex-1">
