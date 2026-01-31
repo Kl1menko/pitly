@@ -66,22 +66,22 @@ export default async function HomePage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4">
       <SearchHero cities={cities} />
 
-      <section className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8 md:grid-cols-[1.4fr_1fr] md:items-center">
+      <section className="grid gap-6 rounded-3xl bg-white/90 p-6 shadow-sm ring-1 ring-neutral-200 sm:p-8 md:grid-cols-[1.4fr_1fr] md:items-center dark:bg-neutral-900 dark:ring-neutral-800 dark:shadow-[0_25px_70px_-45px_rgba(0,0,0,0.7)]">
         <div className="text-center md:text-left">
-          <h1 className="mt-2 text-3xl font-bold leading-tight text-neutral-900 sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-bold leading-tight text-neutral-900 dark:text-white sm:text-5xl">
             Знаходьте перевірені СТО та автозапчастини у вашому місті — швидко
             та без дзвінків
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-neutral-700 sm:text-xl">
+          <p className="mt-4 text-base leading-relaxed text-neutral-700 dark:text-neutral-300 sm:text-xl">
             Pitly об’єднує автосервіси та магазини в одному місці. Можна лишити
             заявку без реєстрації: ми надішлемо посилання у Telegram, і ви
             повернетесь до пропозицій у будь-який момент.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"></div>
         </div>
-        <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl ring-1 ring-neutral-200/60 shadow-sm">
+        <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl ring-1 ring-neutral-200/60 shadow-sm dark:ring-neutral-800/80">
           <SafeVideo src="/videos/video_car2.mp4" poster="/images/img_banner.gif" roundedClassName="rounded-2xl" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-900/10 via-transparent to-transparent" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-neutral-900/10 via-transparent to-transparent dark:from-neutral-900/40" />
         </div>
       </section>
 
@@ -89,29 +89,29 @@ export default async function HomePage() {
         {featureCards.map((card, idx) => (
           <Card
             key={card.title}
-            className="relative overflow-hidden bg-white/90 p-0 ring-1 ring-neutral-200 shadow-lg"
+            className="relative overflow-hidden bg-white/90 p-0 ring-1 ring-neutral-200 shadow-lg dark:bg-neutral-900 dark:ring-neutral-800 dark:shadow-[0_25px_70px_-45px_rgba(0,0,0,0.7)]"
           >
             <div className="grid h-full grid-cols-1 gap-0 md:grid-cols-[1.2fr_1fr]">
               <div className="flex flex-col justify-between gap-4 p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">{`0${idx + 1}`}</p>
-                    <h3 className="text-2xl font-bold text-neutral-900">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-400">{`0${idx + 1}`}</p>
+                    <h3 className="text-2xl font-bold text-neutral-900 dark:text-white">
                       {card.title}
                     </h3>
-                    <p className="text-sm text-neutral-700">{card.desc}</p>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300">{card.desc}</p>
                   </div>
                 </div>
                 <Link
                   href={card.href}
-                  className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-neutral-900"
                 >
                   {card.cta} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
               <div className="relative overflow-hidden rounded-b-3xl md:rounded-l-none md:rounded-r-3xl">
                 <SafeVideo src={card.video} poster="/images/img_banner.gif" roundedClassName="rounded-b-3xl md:rounded-l-none md:rounded-r-3xl" />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-white/30 via-white/10 to-transparent" />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-white/30 via-white/10 to-transparent dark:from-neutral-950/70 dark:via-neutral-900/30" />
               </div>
             </div>
           </Card>
@@ -120,10 +120,10 @@ export default async function HomePage() {
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Популярні міста</h2>
+          <h2 className="text-2xl font-bold dark:text-white">Популярні міста</h2>
           <Link
             href="/cities"
-            className="text-sm font-semibold text-neutral-900 transition hover:text-neutral-700"
+            className="text-sm font-semibold text-neutral-900 transition hover:text-neutral-700 dark:text-neutral-200 dark:hover:text-white"
           >
             Усі міста
           </Link>
@@ -132,22 +132,22 @@ export default async function HomePage() {
           {topCities.map((city) => (
             <Card
               key={city.id}
-              className="flex items-center justify-between gap-2 bg-white/90 shadow-sm ring-1 ring-neutral-200"
+              className="flex items-center justify-between gap-2 bg-white/90 shadow-sm ring-1 ring-neutral-200 dark:bg-neutral-900 dark:ring-neutral-800"
             >
               <div>
-                <p className="text-lg font-semibold">{city.name_ua}</p>
-                <p className="text-sm text-neutral-600">{city.region_ua}</p>
+                <p className="text-lg font-semibold dark:text-white">{city.name_ua}</p>
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">{city.region_ua}</p>
               </div>
               <div className="flex flex-col gap-2">
                 <Link
                   href={`/${city.slug}/sto`}
-                  className="flex items-center gap-1 text-sm text-neutral-900 transition hover:text-neutral-700"
+                  className="flex items-center gap-1 text-sm text-neutral-900 transition hover:text-neutral-700 dark:text-neutral-200 dark:hover:text-white"
                 >
                   СТО <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href={`/${city.slug}/shops`}
-                  className="flex items-center gap-1 text-sm text-neutral-900 transition hover:text-neutral-700"
+                  className="flex items-center gap-1 text-sm text-neutral-900 transition hover:text-neutral-700 dark:text-neutral-200 dark:hover:text-white"
                 >
                   Магазини <ArrowRight className="h-4 w-4" />
                 </Link>
