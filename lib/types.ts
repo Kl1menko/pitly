@@ -63,7 +63,6 @@ export interface RequestPayloadBase {
   car_brand_id?: string | null;
   car_model_id?: string | null;
   car_model_name?: string | null;
-  car_model_name?: string | null;
   car_year?: number | null;
   vin?: string | null;
 }
