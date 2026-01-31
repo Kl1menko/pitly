@@ -10,7 +10,7 @@
 body {
   font-family: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
   color: #0f172a;
-  background: radial-gradient(circle at 20% 20%, #f7f7fb 0, transparent 40%), radial-gradient(circle at 80% 0%, #eef2ff 0, transparent 35%), #f6f7f8;
+  background: #f7f8fa;
   overflow-x: hidden;
 }
 
