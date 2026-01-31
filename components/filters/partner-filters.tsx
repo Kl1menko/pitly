@@ -94,16 +94,19 @@ export function StoFilters({
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 rounded-2xl border border-neutral-200 bg-white/90 p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Фільтри</h3>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Каталог</p>
+          <h3 className="text-lg font-bold text-neutral-900">Фільтри</h3>
+        </div>
         <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)} className="md:hidden">
           <SlidersHorizontal className="h-4 w-4" />
           Налаштувати
         </Button>
       </div>
-      <div className="hidden rounded-2xl border border-neutral-200 bg-neutral-50 p-4 md:block">{panel}</div>
-      {open && <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 md:hidden">{panel}</div>}
+      <div className="hidden md:block">{panel}</div>
+      {open && <div className="md:hidden">{panel}</div>}
       <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
         <Filter className="h-4 w-4" />
         Активно: {activeServices.length} послуг, {activeBrand ? `бренд ${activeBrand}` : "будь-яка марка"}

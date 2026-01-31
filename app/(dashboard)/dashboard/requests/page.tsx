@@ -48,27 +48,40 @@ export default function DashboardRequestsPage() {
               {offers.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-neutral-800">Оффери</p>
-                  {offers.map((o) => (
-                    <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200 p-3">
-                      <div>
-                        <p className="font-semibold text-neutral-900">₴{o.price ?? "—"} · {o.eta_days ?? "—"} дн</p>
-                        <p className="text-sm text-neutral-600">{o.note}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={statusColor[o.status] ?? "bg-neutral-100 text-neutral-800"}>
-                          {o.status === "sent" && "надіслано"}
-                          {o.status === "viewed" && "переглянуто"}
-                          {o.status === "accepted" && "прийнято"}
-                          {o.status === "rejected" && "відхилено"}
-                          {o.status === "expired" && "прострочено"}
-                          {!["sent","viewed","accepted","rejected","expired"].includes(o.status) && o.status}
-                        </Badge>
-                        {req.status !== "client_selected_offer" && (
-                          <Button size="sm">Обрати</Button>
-                        )}
-                      </div>
+                  <div className="overflow-hidden rounded-2xl border border-neutral-200 shadow-sm">
+                    <div className="grid grid-cols-[1fr_110px_110px_140px_120px] bg-neutral-50 px-3 py-2 text-xs font-semibold text-neutral-600">
+                      <span>Примітка</span>
+                      <span className="text-right">Ціна</span>
+                      <span className="text-right">Термін</span>
+                      <span className="text-center">Статус</span>
+                      <span className="text-center">Дія</span>
                     </div>
-                  ))}
+                    <div className="divide-y divide-neutral-200">
+                      {offers.map((o) => (
+                        <div key={o.id} className="grid grid-cols-[1fr_110px_110px_140px_120px] items-center gap-3 px-3 py-3 text-sm">
+                          <div className="text-neutral-800">{o.note || "—"}</div>
+                          <div className="text-right font-semibold">₴{o.price ?? "—"}</div>
+                          <div className="text-right text-neutral-700">{o.eta_days ?? "—"} дн</div>
+                          <div className="flex justify-center">
+                            <Badge className={statusColor[o.status] ?? "bg-neutral-100 text-neutral-800"}>
+                              {o.status === "sent" && "надіслано"}
+                              {o.status === "viewed" && "переглянуто"}
+                              {o.status === "accepted" && "прийнято"}
+                              {o.status === "rejected" && "відхилено"}
+                              {o.status === "expired" && "прострочено"}
+                              {!["sent","viewed","accepted","rejected","expired"].includes(o.status) && o.status}
+                            </Badge>
+                          </div>
+                          <div className="flex justify-center gap-2">
+                            {req.status !== "client_selected_offer" && (
+                              <Button size="sm" variant="primary">Обрати</Button>
+                            )}
+                            <Button size="sm" variant="secondary">Деталі</Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 
