@@ -17,8 +17,7 @@ export default function LoginPage() {
             alt="Pitly"
             width={32}
             height={32}
-            className="h-8 w-8 animate-[bounce_1.5s_ease-in-out_infinite] motion-safe:translate-y-0"
-            style={{ animationDuration: "1.6s", animationTimingFunction: "cubic-bezier(0.4,0.0,0.4,1)" }}
+            className="h-8 w-8"
             priority
           />
         </div>

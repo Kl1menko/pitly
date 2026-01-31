@@ -22,7 +22,7 @@ export function Footer() {
         <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 lg:flex-row lg:justify-between">
           <div className="max-w-md space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-800 ring-1 ring-white/10">
                 <Image src="/images/pitly.svg" alt="Pitly" width={32} height={32} className="h-8 w-8" />
               </div>
               <div>
