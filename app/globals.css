@@ -49,6 +49,10 @@ a {
   opacity: 1 !important;
 }
 
+[data-sileo-header] {
+  padding: 0.65rem 0.85rem !important;
+}
+
 [data-sileo-pill],
 [data-sileo-body] {
   background: transparent !important;
@@ -61,7 +65,7 @@ a {
 }
 
 [data-sileo-title] {
-  color: #f8fafc !important;
+  color: #ffffff !important;
   font-weight: 700;
   text-transform: none !important;
   letter-spacing: 0;
@@ -70,10 +74,11 @@ a {
 }
 
 [data-sileo-description] {
-  color: #cbd5e1 !important;
-  padding-top: 0.75rem;
+  color: rgba(255, 255, 255, 0.94) !important;
+  padding: 0.95rem 1rem 0.95rem !important;
   background: transparent !important;
   opacity: 1 !important;
+  line-height: 1.35rem;
 }
 
 [data-sileo-title],
@@ -83,12 +88,18 @@ a {
 
 [data-sileo-header-inner],
 [data-sileo-header-inner] * {
-  color: #f8fafc !important;
+  color: #ffffff !important;
 }
 
 [data-sileo-content],
 [data-sileo-content] * {
-  color: #cbd5e1;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+[data-sileo-content][data-visible="true"] {
+  padding-left: 0.85rem !important;
+  padding-right: 0.85rem !important;
+  box-sizing: border-box;
 }
 
 [data-sileo-badge] {
@@ -97,22 +108,100 @@ a {
 }
 
 [data-sileo-button] {
-  background: rgba(255, 255, 255, 0.14) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2.3rem !important;
+  width: auto !important;
+  min-width: 10.5rem !important;
+  max-width: calc(100% - 0.4rem) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box;
+  margin-top: 1rem !important;
+  padding-left: 1.1rem !important;
+  padding-right: 1.1rem !important;
+  background: #ffffff !important;
+  color: #020617 !important;
+  border: 1px solid rgba(255, 255, 255, 0.95) !important;
   font-weight: 600;
   opacity: 1 !important;
+  border-radius: 999px !important;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 22px rgba(255, 255, 255, 0.12);
+}
+
+[data-sileo-description] > *:last-child,
+[data-sileo-content] [data-sileo-button] {
+  margin-right: 0 !important;
 }
 
 [data-sileo-button]:hover {
-  background: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
 }
 
 [data-sileo-toast] [data-sileo-title][data-state],
 [data-sileo-toast] [data-sileo-button][data-state] {
-  color: #f8fafc !important;
+  color: inherit !important;
+}
+
+[data-sileo-content] [data-sileo-button],
+[data-sileo-content] [data-sileo-button] * {
+  color: #000000 !important;
+}
+
+[data-sileo-toast] [data-sileo-button][data-state],
+[data-sileo-toast] [data-sileo-button][data-state] * {
+  color: #000000 !important;
 }
 
 [data-sileo-toast] [data-sileo-badge][data-state] {
-  color: #bfdbfe !important;
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+@media (max-width: 640px) {
+  [data-sileo-toast] {
+    --sileo-width: min(360px, calc(100vw - 1rem));
+  }
+
+  [data-sileo-viewport][data-position="top-right"] {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    align-items: center !important;
+    width: 100vw;
+    max-width: 100vw;
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+  }
+
+  [data-sileo-header] {
+    padding: 0.6rem 0.8rem !important;
+  }
+
+  [data-sileo-title] {
+    font-size: 0.85rem !important;
+    line-height: 1rem !important;
+  }
+
+  [data-sileo-description] {
+    padding: 0.85rem 0.9rem 0.9rem !important;
+    font-size: 0.9rem !important;
+    line-height: 1.35rem !important;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+
+  [data-sileo-button] {
+    display: flex !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 2.2rem !important;
+    margin-top: 0.85rem !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    clear: both;
+  }
 }

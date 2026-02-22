@@ -6,6 +6,7 @@ import { sileo } from "sileo";
 
 const STORAGE_KEY = "pitly_home_register_nudge_seen_v2";
 const COOLDOWN_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const ALWAYS_SHOW_FOR_TEST = true;
 
 function hasAuthCookie() {
   if (typeof document === "undefined") return false;
@@ -18,10 +19,12 @@ export function PopularCitiesRegisterNudge({ targetId = "popular-cities-section"
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const seenAtRaw = window.localStorage.getItem(STORAGE_KEY);
-    if (seenAtRaw) {
-      const seenAt = Number(seenAtRaw);
-      if (Number.isFinite(seenAt) && Date.now() - seenAt < COOLDOWN_MS) return;
+    if (!ALWAYS_SHOW_FOR_TEST) {
+      const seenAtRaw = window.localStorage.getItem(STORAGE_KEY);
+      if (seenAtRaw) {
+        const seenAt = Number(seenAtRaw);
+        if (Number.isFinite(seenAt) && Date.now() - seenAt < COOLDOWN_MS) return;
+      }
     }
     if (hasAuthCookie()) return;
 
@@ -34,7 +37,9 @@ export function PopularCitiesRegisterNudge({ targetId = "popular-cities-section"
         const entry = entries[0];
         if (!entry?.isIntersecting || shown) return;
         shown = true;
-        window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
+        if (!ALWAYS_SHOW_FOR_TEST) {
+          window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
+        }
         sileo.info({
           title: "Зареєструйтесь — так зручніше",
           description: "У кабінеті все збережеться в одному місці: заявки, відповіді партнерів і історія звернень.",

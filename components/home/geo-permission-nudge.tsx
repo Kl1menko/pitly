@@ -9,6 +9,7 @@ import { type City } from "@/lib/types";
 
 const STORAGE_KEY = "pitly_geo_permission_nudge_seen_v1";
 const COOLDOWN_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+const ALWAYS_SHOW_FOR_TEST = true;
 
 function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const toRad = (v: number) => (v * Math.PI) / 180;
@@ -37,14 +38,18 @@ export function GeoPermissionNudge({ cities }: { cities: City[] }) {
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     if (getPreferredCitySlug()) return;
 
-    const seenAtRaw = window.localStorage.getItem(STORAGE_KEY);
-    if (seenAtRaw) {
-      const seenAt = Number(seenAtRaw);
-      if (Number.isFinite(seenAt) && Date.now() - seenAt < COOLDOWN_MS) return;
+    if (!ALWAYS_SHOW_FOR_TEST) {
+      const seenAtRaw = window.localStorage.getItem(STORAGE_KEY);
+      if (seenAtRaw) {
+        const seenAt = Number(seenAtRaw);
+        if (Number.isFinite(seenAt) && Date.now() - seenAt < COOLDOWN_MS) return;
+      }
     }
 
     const timer = window.setTimeout(() => {
-      window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      if (!ALWAYS_SHOW_FOR_TEST) {
+        window.localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      }
       sileo.info({
         title: "Дозволити геолокацію?",
         description: "Підставимо ваше місто автоматично, щоб швидше показати сервіси поруч.",
