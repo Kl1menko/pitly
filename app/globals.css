@@ -44,15 +44,20 @@ a {
   backdrop-filter: blur(8px);
 }
 
-/* Disable bright decorative gooey layer from the default theme */
-[data-sileo-canvas],
-[data-sileo-svg] {
-  display: none !important;
-}
-
 [data-sileo-header],
 [data-sileo-content] {
   opacity: 1 !important;
+}
+
+[data-sileo-pill],
+[data-sileo-body] {
+  background: transparent !important;
+}
+
+[data-sileo-svg] path,
+[data-sileo-svg] rect,
+[data-sileo-svg] ellipse {
+  filter: drop-shadow(0 10px 24px rgba(2, 6, 23, 0.22));
 }
 
 [data-sileo-title] {
@@ -69,6 +74,21 @@ a {
   padding-top: 0.75rem;
   background: transparent !important;
   opacity: 1 !important;
+}
+
+[data-sileo-title],
+[data-sileo-description] {
+  mix-blend-mode: normal !important;
+}
+
+[data-sileo-header-inner],
+[data-sileo-header-inner] * {
+  color: #f8fafc !important;
+}
+
+[data-sileo-content],
+[data-sileo-content] * {
+  color: #cbd5e1;
 }
 
 [data-sileo-badge] {

@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Toaster
             position="top-right"
             offset={{ top: 16, right: 16 }}
-            options={{ roundness: 20 }}
+            options={{ roundness: 20, fill: "#0f172a" }}
           />
           <Header />
           <main className="min-h-screen bg-transparent pb-16 pt-8">{children}</main>
