@@ -1,5 +1,6 @@
 import { demoBrands, demoCities, demoPartCategories, allDemoPartners, demoServices } from "@/lib/data/demo";
 import { supabaseReady, getSupabaseServerClient } from "@/lib/supabase/server";
+import { taxonomyServicesBySlug } from "@/lib/services/taxonomy";
 import {
   type Partner,
   type PartnerType,
@@ -11,6 +12,34 @@ import {
   type CarBrand,
   type CarModel
 } from "@/lib/types";
+
+function hhmmToMinutes(value?: string | null) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function getWeekdayKey(date = new Date()) {
+  return (["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const)[date.getDay()];
+}
+
+function isOpenToday(partner: Partner) {
+  const day = partner.workHours?.[getWeekdayKey()];
+  if (!day) return false;
+  if (day.isOpen === false) return false;
+  return Boolean(day.open && day.close);
+}
+
+function isOpenNow(partner: Partner) {
+  const day = partner.workHours?.[getWeekdayKey()];
+  if (!day || day.isOpen === false) return false;
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const open = hhmmToMinutes(day.open);
+  const close = hhmmToMinutes(day.close);
+  if (open == null || close == null) return false;
+  return nowMin >= open && nowMin <= close;
+}
 
 export async function getCities(): Promise<City[]> {
   if (!supabaseReady) return demoCities;
@@ -35,11 +64,20 @@ export async function getCityBySlug(slug: string): Promise<City | null> {
 }
 
 type PartnerFilters = {
+  q?: string;
   services?: string[];
+  category?: string;
   brand?: string;
   categories?: string[];
   verified?: boolean;
   delivery?: boolean;
+  partsSalesEnabled?: boolean;
+  onlineBooking?: boolean;
+  openToday?: boolean;
+  openNow?: boolean;
+  hasTowService?: boolean;
+  mobileService?: boolean;
+  evacOrMobile?: boolean;
   sort?: "rating" | "new";
 };
 
@@ -63,6 +101,26 @@ export async function getPartnersByCity(params: {
         )
       );
     }
+    if (filters?.q) {
+      const q = filters.q.toLowerCase();
+      list = list.filter((p) => {
+        const serviceText = (p.services ?? [])
+          .map((s) => (typeof s === "string" ? s : s.name_ua || s.id))
+          .join(" ")
+          .toLowerCase();
+        const hay = [p.name, p.description ?? "", p.address ?? "", p.district ?? "", serviceText].join(" ").toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    if (filters?.category && type === "sto") {
+      list = list.filter((p) =>
+        p.services?.some((s) => {
+          const key = typeof s === "string" ? s : s.id;
+          const svc = demoServices.find((item) => item.id === key || item.slug === key);
+          return svc?.categoryId === filters.category;
+        })
+      );
+    }
     if (filters?.categories?.length && type === "shop") {
       list = list.filter((p) =>
         filters.categories!.some((c) =>
@@ -81,6 +139,27 @@ export async function getPartnersByCity(params: {
     }
     if (filters?.delivery && type === "shop") {
       list = list.filter((p) => p.delivery_available);
+    }
+    if (filters?.partsSalesEnabled && type === "sto") {
+      list = list.filter((p) => p.partsSalesEnabled || p.delivery_available || Boolean(p.categories?.length));
+    }
+    if (filters?.onlineBooking && type === "sto") {
+      list = list.filter((p) => p.onlineBookingEnabled);
+    }
+    if (filters?.openToday && type === "sto") {
+      list = list.filter(isOpenToday);
+    }
+    if (filters?.openNow && type === "sto") {
+      list = list.filter(isOpenNow);
+    }
+    if (filters?.hasTowService && type === "sto") {
+      list = list.filter((p) => p.hasTowService);
+    }
+    if (filters?.mobileService && type === "sto") {
+      list = list.filter((p) => p.mobileService);
+    }
+    if (filters?.evacOrMobile && type === "sto") {
+      list = list.filter((p) => p.hasTowService || p.mobileService);
     }
     if (filters?.sort === "rating") {
       list = [...list].sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
@@ -118,6 +197,13 @@ export async function getPartnersByCity(params: {
     partner_services?: { service_id: string }[];
     shop_part_offers?: { category_id: string; delivery_available?: boolean }[];
     partner_car_compatibility?: { brand_id: string }[];
+    parts_sales_enabled?: boolean;
+    work_hours?: Partner["workHours"];
+    online_booking_enabled?: boolean;
+    booking_mode?: Partner["bookingMode"];
+    booking_url?: string | null;
+    has_tow_service?: boolean;
+    mobile_service?: boolean;
   };
 
   let partners: Partner[] =
@@ -130,7 +216,14 @@ export async function getPartnersByCity(params: {
         (s) => demoPartCategories.find((cat) => cat.id === s.category_id || cat.slug === s.category_id) || { id: s.category_id, name_ua: s.category_id }
       ),
       brands: p.partner_car_compatibility?.map((c) => c.brand_id),
-      delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false
+      delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false,
+      partsSalesEnabled: p.parts_sales_enabled ?? (p.shop_part_offers?.length ?? 0) > 0,
+      workHours: p.work_hours ?? p.workHours ?? null,
+      onlineBookingEnabled: p.online_booking_enabled ?? p.onlineBookingEnabled ?? false,
+      bookingMode: p.booking_mode ?? p.bookingMode ?? "none",
+      bookingUrl: p.booking_url ?? p.bookingUrl ?? null,
+      hasTowService: p.has_tow_service ?? p.hasTowService ?? false,
+      mobileService: p.mobile_service ?? p.mobileService ?? false
     })) ?? [];
 
   if (filters?.services?.length && type === "sto") {
@@ -153,6 +246,26 @@ export async function getPartnersByCity(params: {
       )
     );
   }
+  if (filters?.q) {
+    const q = filters.q.toLowerCase();
+    partners = partners.filter((p) => {
+      const serviceText = (p.services ?? [])
+        .map((s) => (typeof s === "string" ? s : s.name_ua || s.id))
+        .join(" ")
+        .toLowerCase();
+      const hay = [p.name, p.description ?? "", p.address ?? "", p.district ?? "", serviceText].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  if (filters?.category && type === "sto") {
+    partners = partners.filter((p) =>
+      p.services?.some((s) => {
+        const key = typeof s === "string" ? s : s.id;
+        const svc = demoServices.find((item) => item.id === key || item.slug === key);
+        return svc?.categoryId === filters.category;
+      })
+    );
+  }
   if (filters?.brand) {
     partners = partners.filter((p) => !p.brands || p.brands.includes(filters.brand!));
   }
@@ -161,6 +274,27 @@ export async function getPartnersByCity(params: {
   }
   if (filters?.delivery && type === "shop") {
     partners = partners.filter((p) => p.delivery_available);
+  }
+  if (filters?.partsSalesEnabled && type === "sto") {
+    partners = partners.filter((p) => p.partsSalesEnabled || p.delivery_available || Boolean(p.categories?.length));
+  }
+  if (filters?.onlineBooking && type === "sto") {
+    partners = partners.filter((p) => p.onlineBookingEnabled);
+  }
+  if (filters?.openToday && type === "sto") {
+    partners = partners.filter(isOpenToday);
+  }
+  if (filters?.openNow && type === "sto") {
+    partners = partners.filter(isOpenNow);
+  }
+  if (filters?.hasTowService && type === "sto") {
+    partners = partners.filter((p) => p.hasTowService);
+  }
+  if (filters?.mobileService && type === "sto") {
+    partners = partners.filter((p) => p.mobileService);
+  }
+  if (filters?.evacOrMobile && type === "sto") {
+    partners = partners.filter((p) => p.hasTowService || p.mobileService);
   }
   if (filters?.sort === "rating") {
     partners = [...partners].sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
@@ -227,6 +361,13 @@ export async function getPartnerBySlug(type: PartnerType, slug: string): Promise
       ?.map((s: any) => demoPartCategories.find((cat) => cat.id === s.category_id) || { id: s.category_id, name_ua: s.category_id }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delivery_available: data.shop_part_offers?.some((s: any) => s.delivery_available) ?? false,
+    partsSalesEnabled: data.parts_sales_enabled ?? (data.shop_part_offers?.length ?? 0) > 0,
+    workHours: data.work_hours ?? data.workHours ?? null,
+    onlineBookingEnabled: data.online_booking_enabled ?? data.onlineBookingEnabled ?? false,
+    bookingMode: data.booking_mode ?? data.bookingMode ?? "none",
+    bookingUrl: data.booking_url ?? data.bookingUrl ?? null,
+    hasTowService: data.has_tow_service ?? data.hasTowService ?? false,
+    mobileService: data.mobile_service ?? data.mobileService ?? false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     brands: data.partner_car_compatibility?.map((c: any) => c.brand_id)
   };
@@ -240,7 +381,30 @@ export async function getServices(): Promise<Service[]> {
     console.warn("Supabase getServices error", error);
     return demoServices;
   }
-  return data ?? demoServices;
+  const dbServices = (data as Service[] | null) ?? [];
+  const merged = new Map<string, Service>();
+
+  for (const item of demoServices) {
+    merged.set(item.slug, item);
+  }
+
+  for (const item of dbServices) {
+    const taxonomy = taxonomyServicesBySlug.get(item.slug);
+    merged.set(item.slug, {
+      ...taxonomy,
+      ...item,
+      categoryId: item.categoryId ?? taxonomy?.categoryId ?? null,
+      keywords: item.keywords ?? taxonomy?.keywords ?? [],
+      isPopular: item.isPopular ?? taxonomy?.isPopular ?? false,
+      sortOrder: item.sortOrder ?? taxonomy?.sortOrder ?? 0
+    });
+  }
+
+  return Array.from(merged.values()).sort((a, b) => {
+    const byOrder = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    if (byOrder !== 0) return byOrder;
+    return a.name_ua.localeCompare(b.name_ua, "uk");
+  });
 }
 
 export async function getPartCategories(): Promise<PartCategory[]> {
@@ -353,6 +517,7 @@ export async function createRequestRepair(payload: RepairRequestPayload) {
     car_model_id: payload.car_model_id,
     car_year: payload.car_year,
     problem_description: payload.problem_description,
+    parts_needed: payload.parts_needed ?? false,
     photos: payload.photos ?? [],
     contact_phone: payload.contact_phone,
     contact_name: payload.contact_name,

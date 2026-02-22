@@ -81,6 +81,23 @@ create index if not exists partners_type_city_idx on public.partners(type, city_
 create index if not exists partners_status_idx on public.partners(status);
 create index if not exists partners_verified_idx on public.partners(verified);
 create index if not exists partners_rating_avg_idx on public.partners(rating_avg);
+alter table public.partners add column if not exists parts_sales_enabled boolean not null default false;
+alter table public.partners add column if not exists district text;
+alter table public.partners add column if not exists online_booking_enabled boolean not null default false;
+alter table public.partners add column if not exists booking_mode text not null default 'none' check (booking_mode in ('none','phone','messenger','external'));
+alter table public.partners add column if not exists booking_url text;
+alter table public.partners add column if not exists has_tow_service boolean not null default false;
+alter table public.partners add column if not exists mobile_service boolean not null default false;
+
+create table if not exists public.service_categories (
+  id uuid primary key default gen_random_uuid(),
+  name_ua text not null,
+  slug text not null unique,
+  description text,
+  sort_order int2 not null default 0,
+  is_active boolean not null default true
+);
+create index if not exists service_categories_sort_idx on public.service_categories(sort_order);
 
 create table if not exists public.services (
   id uuid primary key default gen_random_uuid(),
@@ -89,6 +106,12 @@ create table if not exists public.services (
   category text,
   is_active boolean not null default true
 );
+alter table public.services add column if not exists category_id uuid references public.service_categories(id);
+alter table public.services add column if not exists keywords text[] not null default '{}'::text[];
+alter table public.services add column if not exists is_popular boolean not null default false;
+alter table public.services add column if not exists sort_order int2 not null default 0;
+create index if not exists services_category_id_idx on public.services(category_id);
+create index if not exists services_sort_order_idx on public.services(sort_order);
 
 -- partner_services (NO cross-table CHECK; enforced by trigger)
 create table if not exists public.partner_services (
@@ -168,6 +191,7 @@ create table if not exists public.requests (
   extra_services text[] not null default '{}'::text[],
 
   problem_description text,
+  parts_needed boolean not null default false,
   photos jsonb not null default '[]'::jsonb,
   contact_phone text not null,
   contact_name text,
@@ -187,6 +211,20 @@ create table if not exists public.requests (
 create index if not exists requests_type_city_status_idx on public.requests(type, city_id, status);
 create index if not exists requests_client_profile_idx on public.requests(client_profile_id);
 create index if not exists requests_target_partner_idx on public.requests(target_partner_id);
+
+create table if not exists public.request_links (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.requests(id) on delete cascade,
+  token text not null unique,
+  channel text not null check (channel in ('telegram','viber','sms','email','other')),
+  contact text,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index if not exists request_links_request_idx on public.request_links(request_id);
+create index if not exists request_links_token_idx on public.request_links(token);
+create index if not exists request_links_expires_idx on public.request_links(expires_at);
 
 create table if not exists public.offers (
   id uuid primary key default gen_random_uuid(),
@@ -528,6 +566,7 @@ do $$
 begin
   -- allow NULL in client_profile_id for guest submissions
   alter table public.requests alter column client_profile_id drop not null;
+  alter table public.requests add column if not exists parts_needed boolean not null default false;
 
   -- drop old insert policies to avoid duplicates
   drop policy if exists requests_client_insert on public.requests;
@@ -596,6 +635,104 @@ insert into public.services (id, name_ua, slug, category, is_active) values
   (gen_random_uuid(),'Шиномонтаж','shynomontazh','ходова',true),
   (gen_random_uuid(),'Розвал-сходження','rozval-shodzhennia','ходова',true)
 on conflict (slug) do nothing;
+
+-- Service taxonomy categories (new navigation / SEO structure)
+insert into public.service_categories (id, name_ua, slug, description, sort_order, is_active)
+values
+  (gen_random_uuid(),'Ремонт / СТО','sto-remont','Базові та складні ремонтні роботи, діагностика та технічне обслуговування.',10,true),
+  (gen_random_uuid(),'Детейлінг','detailing','Догляд за кузовом і салоном: полірування, захист, хімчистка.',20,true),
+  (gen_random_uuid(),'Шини / Диски','shyny-dysky','Шиномонтаж, балансування, ремонт шин і дисків.',30,true),
+  (gen_random_uuid(),'Кузов / Фарбування','kuzov-farbuvannia','Кузовні роботи, рихтування, фарбування, PDR.',40,true),
+  (gen_random_uuid(),'Скло / Світло','sklo','Ремонт і заміна скла, полірування фар.',50,true),
+  (gen_random_uuid(),'Кондиціонери','avto-kondytsionery','Діагностика, заправка та ремонт кондиціонерів.',60,true),
+  (gen_random_uuid(),'Тюнінг','tyuning','Тюнінг та доопрацювання авто: зовнішній вигляд, комфорт, індивідуальні рішення.',70,true),
+  (gen_random_uuid(),'Евакуація','evakuatsiya','Евакуатор та транспортування авто до СТО або на іншу адресу.',80,true),
+  (gen_random_uuid(),'Мийка','myika','Автомийка та базовий догляд за авто: кузов, салон, швидке обслуговування.',90,true)
+on conflict (slug) do update
+set name_ua = excluded.name_ua,
+    description = excluded.description,
+    sort_order = excluded.sort_order,
+    is_active = excluded.is_active;
+
+-- Service taxonomy: enrich old services and insert new ones
+insert into public.services (id, name_ua, slug, category, category_id, keywords, is_popular, sort_order, is_active)
+select
+  gen_random_uuid(),
+  v.name_ua,
+  v.slug,
+  v.legacy_category,
+  sc.id,
+  v.keywords,
+  v.is_popular,
+  v.sort_order,
+  true
+from (
+  values
+    -- Ремонт / СТО
+    ('Діагностика','diagnostyka','діагностика','sto-remont',array['сканер','check engine']::text[],true,10),
+    ('Ходова','khodova','ходова','sto-remont',array['ходова частина','стуки']::text[],true,20),
+    ('Підвіска','pidviska-servis','ходова','sto-remont',array['амортизатори','пружини']::text[],true,30),
+    ('Гальма','halma','гальма','sto-remont',array['колодки','диски','супорт']::text[],true,40),
+    ('Техобслуговування (ТО)','tekh-obslugovuvannia','двигун','sto-remont',array['то','регламент','масло']::text[],true,50),
+    ('Заміна масла','zamina-masla','двигун','sto-remont',array['масло','фільтр']::text[],true,60),
+    ('Електрика','elektryka','електрика','sto-remont',array['стартер','генератор','проводка']::text[],true,70),
+    ('Ремонт двигуна','remont-dvyhuna','двигун','sto-remont',array['двигун','капремонт']::text[],false,80),
+    ('КПП / трансмісія','kpp-transmisiia','трансмісія','sto-remont',array['коробка','зчеплення','трансмісія']::text[],false,90),
+    ('Вихлопна система','vykhlopna-systema','двигун','sto-remont',array['глушник','каталізатор']::text[],false,100),
+    ('Рульове керування','rulove-keruvannia','ходова','sto-remont',array['рейка','гур','егур']::text[],false,110),
+    ('Розвал-сходження','rozval-shodzhennia','ходова','sto-remont',array['розвал','сходження']::text[],true,120),
+
+    -- Детейлінг
+    ('Полірування','poliruvannia','детейлінг','detailing',array['поліроль','кузов']::text[],true,210),
+    ('Кераміка / віск','keramika-vosk','детейлінг','detailing',array['кераміка','віск','захист']::text[],true,220),
+    ('Хімчистка салону','khimchystka-salonu','детейлінг','detailing',array['салон','сидіння']::text[],true,230),
+    ('Детейл-мійка','deteyl-myika','детейлінг','detailing',array['мийка','детейлінг']::text[],false,240),
+    ('Антидощ','antydoshch','детейлінг','detailing',array['лобове','гідрофоб']::text[],false,250),
+    ('Тонування','tonuvannia','детейлінг','detailing',array['тонування','плівка']::text[],false,260),
+
+    -- Шини / диски
+    ('Шиномонтаж','shynomontazh','ходова','shyny-dysky',array['заміна коліс','монтаж']::text[],true,310),
+    ('Балансування','balansuvannia','ходова','shyny-dysky',array['вібрація','баланс']::text[],true,320),
+    ('Ремонт шин','remont-shyn','ходова','shyny-dysky',array['прокол','латка']::text[],true,330),
+    ('Правка дисків','pravka-dyskiv','ходова','shyny-dysky',array['диски','правка']::text[],false,340),
+    ('Сезонне зберігання коліс','zberihannia-kolis','ходова','shyny-dysky',array['зберігання шин']::text[],false,350),
+
+    -- Кузов / фарбування
+    ('Кузовні роботи','kuzovni-roboty','кузов','kuzov-farbuvannia',array['рихтування','кузов']::text[],true,410),
+    ('Фарбування','farbuvannia','кузов','kuzov-farbuvannia',array['фарба','лак']::text[],true,420),
+    ('PDR (видалення вм’ятин)','pdr','кузов','kuzov-farbuvannia',array['вмятини','без фарбування']::text[],false,430),
+    ('Підбір фарби','pidbir-farby','кузов','kuzov-farbuvannia',array['підбір кольору']::text[],false,440),
+
+    -- Скло / світло
+    ('Заміна скла','zamina-skla','скло','sklo',array['лобове','бокове','заднє']::text[],true,510),
+    ('Ремонт скла','remont-skla','скло','sklo',array['сколи','тріщина']::text[],true,520),
+    ('Полірування фар','poliruvannia-far','скло','sklo',array['фари','світло']::text[],false,530),
+
+    -- Кондиціонери
+    ('Кондиціонери','kondytsionery','електрика','avto-kondytsionery',array['клімат','ac']::text[],true,610),
+    ('Заправка кондиціонера','zapravka-kondytsionera','електрика','avto-kondytsionery',array['фреон','заправка']::text[],true,620),
+    ('Діагностика кондиціонера','diahnostyka-kondytsionera','електрика','avto-kondytsionery',array['ac діагностика','витік']::text[],false,630),
+    ('Ремонт кондиціонера','remont-kondytsionera','електрика','avto-kondytsionery',array['компресор','радіатор']::text[],false,640)
+) as v(name_ua, slug, legacy_category, category_slug, keywords, is_popular, sort_order)
+join public.service_categories sc on sc.slug = v.category_slug
+on conflict (slug) do update
+set name_ua = excluded.name_ua,
+    category = excluded.category,
+    category_id = excluded.category_id,
+    keywords = excluded.keywords,
+    is_popular = excluded.is_popular,
+    sort_order = excluded.sort_order,
+    is_active = true;
+
+-- Backfill flag for stations that already have part offers (shop_part_offers linkage in current model)
+update public.partners p
+set parts_sales_enabled = true
+where p.parts_sales_enabled = false
+  and exists (
+    select 1
+    from public.shop_part_offers spo
+    where spo.partner_id = p.id
+  );
 
 -- Part categories
 insert into public.part_categories (id, name_ua, slug, category, is_active) values
@@ -828,6 +965,7 @@ on conflict (brand_id, slug) do nothing;
 -- RLS ENABLE
 -- =========================================
 alter table public.cities enable row level security;
+alter table public.service_categories enable row level security;
 alter table public.services enable row level security;
 alter table public.part_categories enable row level security;
 alter table public.car_brands enable row level security;
@@ -838,6 +976,7 @@ alter table public.partner_services enable row level security;
 alter table public.partner_car_compatibility enable row level security;
 alter table public.shop_part_offers enable row level security;
 alter table public.requests enable row level security;
+alter table public.request_links enable row level security;
 alter table public.reviews enable row level security;
 alter table public.offers enable row level security;
 alter table public.orders enable row level security;
@@ -859,8 +998,16 @@ create policy cities_admin_all on public.cities
   using (is_admin()) with check (is_admin());
 
 -- services
+drop policy if exists service_categories_public_select on public.service_categories;
+drop policy if exists service_categories_admin_all on public.service_categories;
 drop policy if exists services_public_select on public.services;
 drop policy if exists services_admin_all on public.services;
+
+create policy service_categories_public_select on public.service_categories
+  for select using (is_active = true);
+
+create policy service_categories_admin_all on public.service_categories
+  using (is_admin()) with check (is_admin());
 
 create policy services_public_select on public.services
   for select using (is_active = true);
@@ -989,6 +1136,7 @@ drop policy if exists requests_client_select on public.requests;
 drop policy if exists requests_client_insert on public.requests;
 drop policy if exists requests_client_update_new_draft on public.requests;
 drop policy if exists requests_admin_all on public.requests;
+drop policy if exists request_links_admin_all on public.request_links;
 
 create policy requests_client_select on public.requests
   for select using (client_profile_id = auth.uid());
@@ -1003,6 +1151,9 @@ create policy requests_client_update_new_draft on public.requests
   with check (client_profile_id = auth.uid());
 
 create policy requests_admin_all on public.requests
+  using (is_admin()) with check (is_admin());
+
+create policy request_links_admin_all on public.request_links
   using (is_admin()) with check (is_admin());
 
 -- offers

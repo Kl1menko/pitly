@@ -1,5 +1,16 @@
 import { type CarBrand, type City, type PartCategory, type Partner, type Service } from "@/lib/types";
 import { type Offer, type Order, type ClientCar } from "@/lib/types";
+import { serviceCategories, taxonomyServices } from "@/lib/services/taxonomy";
+
+const weekdayHours = {
+  mon: { open: "09:00", close: "19:00", isOpen: true },
+  tue: { open: "09:00", close: "19:00", isOpen: true },
+  wed: { open: "09:00", close: "19:00", isOpen: true },
+  thu: { open: "09:00", close: "19:00", isOpen: true },
+  fri: { open: "09:00", close: "19:00", isOpen: true },
+  sat: { open: "10:00", close: "16:00", isOpen: true },
+  sun: { isOpen: false }
+} as const;
 
 export const demoCities: City[] = [
   { id: "city-kyiv", name_ua: "Київ", slug: "kyiv", region_ua: "Київська", lat: 50.4501, lng: 30.5234 },
@@ -26,17 +37,11 @@ export const demoCities: City[] = [
   { id: "city-chernivtsi", name_ua: "Чернівці", slug: "chernivtsi", region_ua: "Чернівецька", lat: 48.2915, lng: 25.9403 }
 ];
 
-export const demoServices: Service[] = [
-  { id: "serv-diagnostyka", name_ua: "Діагностика", slug: "diagnostyka", category: "діагностика" },
-  { id: "serv-khodova", name_ua: "Ходова", slug: "khodova", category: "ходова" },
-  { id: "serv-maslo", name_ua: "Заміна масла", slug: "zamina-masla", category: "двигун" },
-  { id: "serv-halma", name_ua: "Гальма", slug: "halma", category: "гальма" },
-  { id: "serv-elektryka", name_ua: "Електрика", slug: "elektryka", category: "електрика" },
-  { id: "serv-kuzovni", name_ua: "Кузовні роботи", slug: "kuzovni-roboty", category: "кузов" },
-  { id: "serv-kondytsionery", name_ua: "Кондиціонери", slug: "kondytsionery", category: "електрика" },
-  { id: "serv-shynomontazh", name_ua: "Шиномонтаж", slug: "shynomontazh", category: "ходова" },
-  { id: "serv-rozval", name_ua: "Розвал-сходження", slug: "rozval-shodzhennia", category: "ходова" }
-];
+const categoryNameById = new Map(serviceCategories.map((c) => [c.id, c.name]));
+export const demoServices: Service[] = taxonomyServices.map((service) => ({
+  ...service,
+  category: service.categoryId ? categoryNameById.get(service.categoryId) ?? null : null
+}));
 
 export const demoPartCategories: PartCategory[] = [
   { id: "cat-halmivna-systema", name_ua: "Гальмівна система", slug: "halmivna-systema" },
@@ -97,13 +102,20 @@ export const demoPartners: Partner[] = [
     slug: "drivetech",
     city_id: "city-kyiv",
     address: "вул. Антоновича, 44",
+    district: "Голосіївський",
     lat: 50.438,
     lng: 30.516,
     phone: "+380671234567",
     description: "Повний спектр сервісу, ходова та електрика.",
+    workHours: weekdayHours,
     verified: true,
     status: "active",
     rating_avg: 4.8,
+    partsSalesEnabled: true,
+    onlineBookingEnabled: true,
+    bookingMode: "phone",
+    hasTowService: true,
+    mobileService: false,
     services: [mapService("khodova"), mapService("diagnostyka"), mapService("zamina-masla"), mapService("halma")],
     brands: ["toyota", "volkswagen", "honda"]
   },
@@ -114,11 +126,16 @@ export const demoPartners: Partner[] = [
     slug: "lviv-auto",
     city_id: "city-lviv",
     address: "просп. Червоної Калини, 99",
+    district: "Сихівський",
     phone: "+380501112233",
     description: "Швидкий сервіс для європейських брендів.",
+    workHours: weekdayHours,
     verified: false,
     status: "active",
     rating_avg: 4.5,
+    onlineBookingEnabled: false,
+    bookingMode: "phone",
+    mobileService: false,
     services: [mapService("diagnostyka"), mapService("khodova")],
     brands: ["bmw", "volkswagen"]
   },
@@ -129,11 +146,19 @@ export const demoPartners: Partner[] = [
     slug: "odesa-motor",
     city_id: "city-odesa",
     address: "просп. Шевченка, 15",
+    district: "Приморський",
     phone: "+380937654321",
     description: "Гальма, кондиціонери, шиномонтаж.",
+    workHours: weekdayHours,
     verified: true,
     status: "active",
     rating_avg: 4.6,
+    partsSalesEnabled: true,
+    onlineBookingEnabled: true,
+    bookingMode: "external",
+    bookingUrl: "https://example.com/book/odesa-motor",
+    hasTowService: false,
+    mobileService: true,
     services: [mapService("halma"), mapService("kondytsionery"), mapService("shynomontazh")],
     brands: ["nissan", "hyundai", "kia"]
   },
@@ -176,11 +201,18 @@ export const demoPartners: Partner[] = [
     slug: "kharkiv-drive",
     city_id: "city-kharkiv",
     address: "просп. Науки, 25",
+    district: "Шевченківський",
     phone: "+380671111222",
     description: "Електрика, шини, розвал. Працюємо з корейськими авто.",
+    workHours: weekdayHours,
     verified: true,
     status: "active",
     rating_avg: 4.4,
+    partsSalesEnabled: true,
+    onlineBookingEnabled: false,
+    bookingMode: "messenger",
+    hasTowService: true,
+    mobileService: true,
     services: [mapService("elektryka"), mapService("shynomontazh"), mapService("rozval-shodzhennia")],
     brands: ["kia", "hyundai", "nissan"]
   },
@@ -191,11 +223,16 @@ export const demoPartners: Partner[] = [
     slug: "dnipro-body-brake",
     city_id: "city-dnipro",
     address: "вул. Грушевського, 7",
+    district: "Центральний",
     phone: "+380503334455",
     description: "Кузов, гальма, кондиціонери. Швидкі ремонти.",
+    workHours: weekdayHours,
     verified: false,
     status: "active",
     rating_avg: 4.3,
+    bookingMode: "phone",
+    hasTowService: false,
+    mobileService: false,
     services: [mapService("kuzovni-roboty"), mapService("halma"), mapService("kondytsionery")],
     brands: ["toyota", "volkswagen", "mazda"]
   },
@@ -247,11 +284,18 @@ const generatedPartners: Partner[] = demoCities.flatMap((city) => {
       slug: `${city.slug}-sto`,
       city_id: city.id,
       address: `Центр, ${city.name_ua}`,
+      district: "Центр",
       phone: "+380631234567",
       description: "Базовий сервіс: ходова, гальма, масло.",
+      workHours: weekdayHours,
       verified: false,
       status: "active",
       rating_avg: 4.2,
+      bookingMode: "phone",
+      partsSalesEnabled: city.slug.length % 2 === 0,
+      onlineBookingEnabled: false,
+      hasTowService: city.slug.length % 3 === 0,
+      mobileService: city.slug.length % 4 === 0,
       services: [mapService("diagnostyka"), mapService("khodova"), mapService("zamina-masla")],
       brands: ["toyota", "volkswagen", "skoda"]
     });

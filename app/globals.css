@@ -22,3 +22,77 @@ a {
 .card {
   @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
 }
+
+/* Sileo toast theming to match Pitly dark/neutral UI */
+[data-sileo-viewport] {
+  z-index: 80;
+}
+
+[data-sileo-toast] {
+  --sileo-width: min(380px, calc(100vw - 1.5rem));
+  --sileo-state-info: #60a5fa;
+  --sileo-state-success: #34d399;
+  --sileo-state-error: #f87171;
+  --sileo-state-warning: #fbbf24;
+}
+
+[data-sileo-pill],
+[data-sileo-body] {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+/* Disable bright decorative gooey layer from the default theme */
+[data-sileo-canvas],
+[data-sileo-svg] {
+  display: none !important;
+}
+
+[data-sileo-header],
+[data-sileo-content] {
+  opacity: 1 !important;
+}
+
+[data-sileo-title] {
+  color: #f8fafc !important;
+  font-weight: 700;
+  text-transform: none !important;
+  letter-spacing: 0;
+  opacity: 1 !important;
+  text-shadow: none !important;
+}
+
+[data-sileo-description] {
+  color: #cbd5e1 !important;
+  padding-top: 0.75rem;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+[data-sileo-badge] {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-sileo-button] {
+  background: rgba(255, 255, 255, 0.14) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+  opacity: 1 !important;
+}
+
+[data-sileo-button]:hover {
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+
+[data-sileo-toast] [data-sileo-title][data-state],
+[data-sileo-toast] [data-sileo-button][data-state] {
+  color: #f8fafc !important;
+}
+
+[data-sileo-toast] [data-sileo-badge][data-state] {
+  color: #bfdbfe !important;
+}

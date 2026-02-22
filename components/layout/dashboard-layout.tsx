@@ -57,7 +57,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
 
-      <section className="flex-1 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">{children}</section>
+      <section className="flex-1 rounded-3xl border border-neutral-100 bg-white p-6 shadow-sm">
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Частина розділів кабінету поки показує демо-дані. Критичні auth/заявки флоу працюють окремо.
+        </div>
+        {children}
+      </section>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-neutral-200 bg-white/95 px-3 py-3 backdrop-blur md:hidden">
         {bottomLinks.map((link) => {

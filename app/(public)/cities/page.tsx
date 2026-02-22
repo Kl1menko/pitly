@@ -5,9 +5,17 @@ import { Card } from "@/components/ui/card";
 import { getCities } from "@/lib/supabase/queries";
 
 export const metadata = {
-  title: "Міста України — каталог СТО та магазинів",
-  description: "Оберіть місто, щоб побачити СТО та магазини запчастин. Pitly працює у всіх обласних центрах."
+  title: "Міста України — каталог СТО та автопослуг",
+  description: "Оберіть місто, щоб побачити СТО та автопослуги. Pitly працює у всіх обласних центрах."
 };
+
+function formatRegionLabel(region?: string | null) {
+  if (!region) return "";
+  const trimmed = region.trim();
+  if (!trimmed) return "";
+  if (/обл\.?$/i.test(trimmed)) return trimmed.replace(/обл$/i, "обл.");
+  return `${trimmed} обл.`;
+}
 
 export default async function CitiesPage() {
   const cities = await getCities();
@@ -23,14 +31,14 @@ export default async function CitiesPage() {
           <Card key={city.id} className="flex flex-col gap-2">
             <div>
               <p className="text-lg font-semibold">{city.name_ua}</p>
-              <p className="text-sm text-neutral-600">{city.region_ua}</p>
+              <p className="text-sm text-neutral-600">{formatRegionLabel(city.region_ua)}</p>
             </div>
             <div className="mt-auto flex items-center gap-3 text-sm font-semibold text-primary">
               <Link href={`/${city.slug}/sto`} className="flex items-center gap-1">
                 СТО <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href={`/${city.slug}/shops`} className="flex items-center gap-1">
-                Запчастини <ArrowRight className="h-4 w-4" />
+              <Link href={`/${city.slug}/services/sto-remont`} className="flex items-center gap-1">
+                Послуги <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </Card>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { writeSupabaseSessionCookies } from "@/lib/supabase/auth-cookies";
+import { submitPendingRequestIfAny } from "@/lib/requests/pending-client";
 
 export default function AuthCallbackPage() {
   const supabase = getSupabaseBrowserClient();
@@ -9,6 +11,9 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const syncSession = async () => {
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      const searchParams = new URLSearchParams(search);
+      const code = searchParams.get("code");
       const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
       const params = new URLSearchParams(hash);
 
@@ -21,6 +26,18 @@ export default function AuthCallbackPage() {
       const access_token = params.get("access_token");
       const refresh_token = params.get("refresh_token");
 
+      // PKCE flow (common for OAuth providers)
+      if (code) {
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          setMessage(`Помилка: ${exchangeError.message}`);
+          return;
+        }
+        writeSupabaseSessionCookies(data.session);
+        await redirectAfterPendingSubmit();
+        return;
+      }
+
       // If tokens are present in the hash (implicit flow), set the session explicitly.
       if (access_token && refresh_token) {
         const { data, error: setError } = await supabase.auth.setSession({ access_token, refresh_token });
@@ -28,8 +45,8 @@ export default function AuthCallbackPage() {
           setMessage(`Помилка: ${setError.message}`);
           return;
         }
-        writeCookies(data.session?.access_token, data.session?.refresh_token);
-        redirectToDashboard();
+        writeSupabaseSessionCookies(data.session);
+        await redirectAfterPendingSubmit();
         return;
       }
 
@@ -39,18 +56,18 @@ export default function AuthCallbackPage() {
         setMessage(getError ? `Помилка: ${getError.message}` : "Сесію не знайдено.");
         return;
       }
-      writeCookies(data.session.access_token, data.session.refresh_token);
-      redirectToDashboard();
+      writeSupabaseSessionCookies(data.session);
+      await redirectAfterPendingSubmit();
     };
 
-    const writeCookies = (access?: string, refresh?: string) => {
-      const maxAge = 60 * 60 * 24 * 7; // 7 днів
-      if (access) document.cookie = `sb-access-token=${access}; path=/; max-age=${maxAge}; samesite=lax; secure`;
-      if (refresh) document.cookie = `sb-refresh-token=${refresh}; path=/; max-age=${maxAge}; samesite=lax; secure`;
-    };
-
-    const redirectToDashboard = () => {
-      window.location.replace("/dashboard");
+    const redirectAfterPendingSubmit = async () => {
+      try {
+        const pending = await submitPendingRequestIfAny();
+        window.location.replace(pending.submitted ? "/thank-you" : "/dashboard");
+      } catch (submitError) {
+        console.error("pending request submit after oauth callback error", submitError);
+        window.location.replace("/dashboard");
+      }
     };
 
     syncSession();

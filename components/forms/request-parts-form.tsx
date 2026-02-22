@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Loader2, Send } from "lucide-react";
 import { z } from "zod";
+import { sileo } from "sileo";
 
 import { CitySelector } from "@/components/shared/city-selector";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { partsRequestSchema } from "@/lib/validators/requests";
 import { useEffect, useState } from "react";
 import { RequestConfirmDialog } from "@/components/forms/request-confirm-dialog";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { savePendingRequest } from "@/lib/requests/pending-client";
 
 type FormValues = z.infer<typeof partsRequestSchema>;
 
@@ -130,7 +132,7 @@ export function RequestPartsForm({
       router.push("/thank-you");
     } catch (err) {
       console.error("request parts error", err);
-      alert("Не вдалось надіслати. Перевірте дані або спробуйте пізніше.");
+      sileo.error({ title: "Не вдалось надіслати. Перевірте дані або спробуйте пізніше." });
     }
   };
 
@@ -265,7 +267,7 @@ export function RequestPartsForm({
         }}
         onSendWithAccount={() => {
           if (!pendingValues) return;
-          localStorage.setItem("pitly_pending_request", JSON.stringify({ type: "parts", values: pendingValues }));
+          savePendingRequest({ type: "parts", values: pendingValues });
           window.location.href = "/register";
         }}
         summary={{

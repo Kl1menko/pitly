@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Loader2, Upload } from "lucide-react";
 import { z } from "zod";
+import { sileo } from "sileo";
 
 import { CitySelector } from "@/components/shared/city-selector";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { type CarBrand, type City, type Service, type CarModel } from "@/lib/types";
 import { repairRequestSchema } from "@/lib/validators/requests";
 import { RequestConfirmDialog } from "@/components/forms/request-confirm-dialog";
+import { savePendingRequest } from "@/lib/requests/pending-client";
 
 type FormValues = z.infer<typeof repairRequestSchema>;
 
@@ -39,7 +41,6 @@ export function RequestRepairForm({
   const [loadingModels, setLoadingModels] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null);
-  const [pendingPhotos, setPendingPhotos] = useState<string[]>([]);
   const form = useForm<FormValues>({
     resolver: zodResolver(repairRequestSchema),
     defaultValues: {
@@ -50,6 +51,7 @@ export function RequestRepairForm({
       contact_phone: "",
       contact_telegram: "",
       extra_services: [],
+      parts_needed: false,
       services_multi: [],
       car_model_id: "",
       car_model_name: ""
@@ -90,15 +92,6 @@ export function RequestRepairForm({
   }, [brandId, form]);
 
   const handlePreview = async (values: FormValues) => {
-    const fileList = (form.getValues("photos") as unknown as FileList) ?? [];
-    let photoUrls: string[] = [];
-    if (fileList && fileList.length > 0) {
-      setUploading(true);
-      const uploads = Array.from(fileList).map((file) => uploadPhoto(file));
-      photoUrls = await Promise.all(uploads);
-      setUploading(false);
-    }
-    setPendingPhotos(photoUrls);
     setPendingValues(values);
     setConfirmOpen(true);
   };
@@ -106,6 +99,10 @@ export function RequestRepairForm({
   const sendRequest = async (values: FormValues) => {
     try {
       setUploading(true);
+      const fileList = (form.getValues("photos") as unknown as FileList) ?? [];
+      const photoUrls =
+        fileList && fileList.length > 0 ? await Promise.all(Array.from(fileList).map((file) => uploadPhoto(file))) : [];
+
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -117,7 +114,8 @@ export function RequestRepairForm({
           car_model_name: values.car_model_name || null,
           car_year: values.car_year || null,
           problem_description: values.problem_description,
-          photos: pendingPhotos,
+          parts_needed: Boolean(values.parts_needed),
+          photos: photoUrls,
           contact_phone: values.contact_phone,
           contact_name: values.contact_name,
           target_partner_id: values.target_partner_id || null,
@@ -138,10 +136,16 @@ export function RequestRepairForm({
         }).catch(() => null);
       }
 
-      router.push("/thank-you");
+      const citySlug = cities.find((c) => c.id === values.city_id)?.slug;
+      const primaryServiceId = values.services_multi?.[0];
+      const primaryServiceSlug = primaryServiceId ? services.find((s) => s.id === primaryServiceId)?.slug : null;
+      const nextParams = new URLSearchParams();
+      if (citySlug) nextParams.set("city", citySlug);
+      if (primaryServiceSlug) nextParams.set("service", primaryServiceSlug);
+      router.push(`/thank-you${nextParams.toString() ? `?${nextParams.toString()}` : ""}`);
     } catch (err) {
       console.error("request repair error", err);
-      alert("Не вдалось надіслати. Перевірте дані або спробуйте пізніше.");
+      sileo.error({ title: "Не вдалось надіслати. Перевірте дані або спробуйте пізніше." });
     } finally {
       setUploading(false);
     }
@@ -246,6 +250,15 @@ export function RequestRepairForm({
             )}
           </div>
           <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-neutral-800">
+              <input type="checkbox" checked={Boolean(form.watch("parts_needed"))} onChange={(e) => form.setValue("parts_needed", e.target.checked)} />
+              Потрібні запчастини (підбір і продаж разом з ремонтом)
+            </label>
+            <p className="mt-1 text-xs text-neutral-500">
+              Показуватимемо заявку СТО, які можуть закрити і роботи, і деталі під ключ.
+            </p>
+          </div>
+          <div>
             <Label>Ім’я</Label>
             <Input placeholder="Ім’я" {...form.register("contact_name")} />
           </div>
@@ -278,7 +291,7 @@ export function RequestRepairForm({
         }}
         onSendWithAccount={() => {
           if (!pendingValues) return;
-          localStorage.setItem("pitly_pending_request", JSON.stringify({ type: "repair", values: pendingValues }));
+          savePendingRequest({ type: "repair", values: pendingValues });
           window.location.href = "/register";
         }}
         summary={{
@@ -290,6 +303,7 @@ export function RequestRepairForm({
             { label: "Рік", value: pendingValues?.car_year },
             { label: "Послуг обрано", value: pendingValues?.services_multi?.length },
             { label: "Опис", value: pendingValues?.problem_description },
+            { label: "Потрібні запчастини", value: pendingValues?.parts_needed ? "Так" : "" },
             { label: "Телефон", value: pendingValues?.contact_phone },
             { label: "Ім’я", value: pendingValues?.contact_name },
             { label: "Telegram", value: pendingValues?.contact_telegram }

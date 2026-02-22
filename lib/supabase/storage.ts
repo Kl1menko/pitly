@@ -7,16 +7,18 @@ export async function uploadPhoto(file: File): Promise<string> {
   const bucket = "request-photos";
   const path = `${crypto.randomUUID()}-${file.name}`;
 
-  try {
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      cacheControl: "3600",
-      upsert: false
-    });
-    if (error) throw error;
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data.publicUrl;
-  } catch (err) {
-    console.warn("Upload failed, using local preview", err);
-    return URL.createObjectURL(file);
+  const { error } = await supabase.storage.from(bucket).upload(path, file, {
+    cacheControl: "3600",
+    upsert: false
+  });
+  if (error) {
+    console.warn("Upload failed", error);
+    throw error;
   }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  if (!data.publicUrl) {
+    throw new Error("photo_public_url_missing");
+  }
+  return data.publicUrl;
 }

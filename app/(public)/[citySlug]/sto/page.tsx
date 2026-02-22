@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 import { PartnerCard } from "@/components/cards/partner-card";
 import { StoFilters } from "@/components/filters/partner-filters";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCityBySlug, getPartnersByCity, getServices } from "@/lib/supabase/queries";
+import { serviceCategories } from "@/lib/services/taxonomy";
 
 type Props = {
   params: { citySlug: string };
@@ -35,14 +37,28 @@ export default async function StoCityPage({ params, searchParams }: Props) {
   const services = await getServices();
   const brands = await getBrands();
   const cityName = city.name_ua;
+  const explicitServices = typeof searchParams.services === "string" ? searchParams.services.split(",").filter(Boolean) : undefined;
+  const categorySlug = typeof searchParams.category === "string" ? searchParams.category : undefined;
+  const category = categorySlug ? serviceCategories.find((c) => c.slug === categorySlug) : undefined;
+  const categoryServices = !explicitServices?.length && category ? services.filter((s) => s.categoryId === category.id).map((s) => s.slug) : undefined;
+  const selectedServices = explicitServices?.length ? explicitServices : categoryServices;
+  const primaryService = selectedServices?.[0] ? services.find((s) => s.slug === selectedServices[0]) : undefined;
+  const primaryServiceCategory =
+    primaryService?.categoryId ? serviceCategories.find((c) => c.id === primaryService.categoryId) : category;
 
   const partners = await getPartnersByCity({
     type: "sto",
     cityId: city.id,
     filters: {
-      services: typeof searchParams.services === "string" ? searchParams.services.split(",") : undefined,
+      q: typeof searchParams.q === "string" ? searchParams.q : undefined,
+      services: selectedServices,
       brand: typeof searchParams.brand === "string" ? searchParams.brand : undefined,
       verified: searchParams.verified === "1",
+      partsSalesEnabled: searchParams.parts === "1",
+      onlineBooking: searchParams.online === "1",
+      openToday: searchParams.today === "1",
+      openNow: searchParams.openNow === "1",
+      evacOrMobile: searchParams.evac === "1",
       sort: searchParams.sort === "rating" ? "rating" : undefined
     }
   });
@@ -79,13 +95,30 @@ export default async function StoCityPage({ params, searchParams }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
+          <Link href="/cities" className="hover:text-neutral-900">Міста</Link>
+          <span>→</span>
+          <span className="text-neutral-700">{city.name_ua}</span>
+          {primaryServiceCategory && (
+            <>
+              <span>→</span>
+              <span className="text-neutral-700">{primaryServiceCategory.name}</span>
+            </>
+          )}
+          {primaryService && (
+            <>
+              <span>→</span>
+              <span className="font-medium text-neutral-900">{primaryService.name_ua}</span>
+            </>
+          )}
+        </div>
         <p className="text-sm font-semibold text-primary uppercase">СТО</p>
         <h1 className="text-3xl font-bold">СТО у місті {city.name_ua}</h1>
         <p className="text-neutral-600">Активні партнери, які приймають заявки онлайн.</p>
       </div>
 
       <Suspense fallback={<div className="text-neutral-600">Завантаження фільтрів...</div>}>
-        <StoFilters services={services} brands={brands} />
+        <StoFilters services={services} brands={brands} defaultCategorySlug={categorySlug} />
       </Suspense>
 
       <div className="grid gap-4 md:grid-cols-2">

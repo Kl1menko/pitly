@@ -6,8 +6,8 @@ export function Footer() {
   const navPrimary = [
     { href: "/how-it-works", label: "Як працює" },
     { href: "/cities", label: "Міста" },
-    { href: "/request/repair", label: "Заявка на ремонт" },
-    { href: "/request/parts", label: "Заявка на запчастини" }
+    { href: "/services", label: "Послуги" },
+    { href: "/request/repair", label: "Заявка на ремонт" }
   ];
 
   const navInfo = [
@@ -27,11 +27,11 @@ export function Footer() {
               </div>
               <div>
                 <p className="text-lg font-bold text-white">Pitly</p>
-                <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Сервіси та запчастини</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-neutral-400">Сервіси та авто-послуги</p>
               </div>
             </div>
             <p className="text-sm leading-relaxed text-neutral-300">
-              Pitly об’єднує СТО та магазини запчастин по Україні. Подайте заявку — отримаєте пропозиції без зайвих дзвінків і збережете історію звернень.
+              Pitly допомагає знайти перевірений сервіс у вашому місті або швидко подати заявку на ремонт і отримати пропозиції.
             </p>
           </div>
 

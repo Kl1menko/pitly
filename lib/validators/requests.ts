@@ -9,6 +9,7 @@ export const repairRequestSchema = z.object({
   service_id: z.string().optional(),
   services_multi: z.array(z.string()).min(1, "Оберіть послуги"),
   extra_services: z.array(z.string()).optional(),
+  parts_needed: z.boolean().optional(),
   problem_description: z.string().min(10, "Опишіть проблему детальніше").max(1000),
   photos: z.any().optional(),
   target_partner_id: z.string().optional(),

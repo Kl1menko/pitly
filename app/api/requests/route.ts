@@ -24,7 +24,8 @@ export async function POST(req: Request) {
       contact_name: body.contact_name || null,
       target_partner_id: body.target_partner_id || null,
       status: "new" as const,
-      client_profile_id: body.client_profile_id || null
+      client_profile_id: body.client_profile_id || null,
+      parts_needed: Boolean(body.parts_needed)
     };
 
     const payload =

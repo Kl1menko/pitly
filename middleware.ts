@@ -1,8 +1,55 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
-const supabaseReady = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseReady = Boolean(supabaseUrl && supabaseAnonKey);
 
-export function middleware(req: NextRequest) {
+function decodeCookieValue(value?: string) {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function extractAccessToken(req: NextRequest) {
+  const direct = decodeCookieValue(req.cookies.get("sb-access-token")?.value);
+  if (direct) return direct;
+
+  const legacy = decodeCookieValue(req.cookies.get("sb:token")?.value);
+  if (!legacy) return "";
+  try {
+    const parsed = JSON.parse(legacy);
+    if (typeof parsed?.access_token === "string") return parsed.access_token;
+  } catch {
+    return legacy;
+  }
+  return "";
+}
+
+async function hasValidSession(req: NextRequest) {
+  const accessToken = extractAccessToken(req);
+  if (!accessToken || !supabaseUrl || !supabaseAnonKey) return false;
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  return !error && Boolean(data.user);
+}
+
+function redirectToLogin(req: NextRequest) {
+  const redirectUrl = new URL("/login", req.url);
+  const res = NextResponse.redirect(redirectUrl);
+  for (const name of ["sb-access-token", "sb-refresh-token", "sb:token"]) {
+    res.cookies.set(name, "", { path: "/", maxAge: 0 });
+  }
+  return res;
+}
+
+export async function middleware(req: NextRequest) {
   if (!supabaseReady) return NextResponse.next();
   if (req.nextUrl.pathname.startsWith("/dashboard")) {
     const demo = req.nextUrl.searchParams.get("demo");
@@ -15,10 +62,10 @@ export function middleware(req: NextRequest) {
     if (demoCookie === "client" || demoCookie === "partner") {
       return NextResponse.next();
     }
-    const hasSession = req.cookies.has("sb-access-token") || req.cookies.has("sb-refresh-token") || req.cookies.has("sb:token");
-    if (!hasSession) {
-      const redirectUrl = new URL("/login", req.url);
-      return NextResponse.redirect(redirectUrl);
+
+    const valid = await hasValidSession(req);
+    if (!valid) {
+      return redirectToLogin(req);
     }
   }
   return NextResponse.next();

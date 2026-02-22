@@ -7,8 +7,31 @@ import { Card } from "@/components/ui/card";
 import { demoPartCategories, demoServices } from "@/lib/data/demo";
 import { type Partner } from "@/lib/types";
 
+function hhmmToMinutes(value?: string | null) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return null;
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function getWeekdayKey(date = new Date()) {
+  return (["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const)[date.getDay()];
+}
+
+function getOpenStatus(partner: Partner) {
+  const day = partner.workHours?.[getWeekdayKey()];
+  if (!day || day.isOpen === false) return { today: false, now: false };
+  const open = hhmmToMinutes(day.open);
+  const close = hhmmToMinutes(day.close);
+  const today = open != null && close != null;
+  if (!today) return { today: false, now: false };
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return { today: true, now: nowMin >= open && nowMin <= close };
+}
+
 export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: string }) {
   const detailHref = partner.type === "sto" ? `/sto/${partner.slug}` : `/shop/${partner.slug}`;
+  const openStatus = getOpenStatus(partner);
 
   const serviceLabel = (s: { id: string; name_ua?: string } | string) => {
     const key = typeof s === "string" ? s : s.id;
@@ -29,6 +52,18 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold text-neutral-900">{partner.name}</h3>
             {partner.verified && <Badge variant="success">Перевірено</Badge>}
+            {partner.type === "sto" && partner.partsSalesEnabled && (
+              <Badge className="bg-indigo-50 text-indigo-800">Є запчастини</Badge>
+            )}
+            {partner.type === "sto" && partner.onlineBookingEnabled && (
+              <Badge className="bg-emerald-50 text-emerald-800">Онлайн-запис</Badge>
+            )}
+            {partner.type === "sto" && openStatus.now && (
+              <Badge className="bg-green-50 text-green-800">Працює зараз</Badge>
+            )}
+            {partner.type === "sto" && !openStatus.now && openStatus.today && (
+              <Badge className="bg-lime-50 text-lime-800">Сьогодні працює</Badge>
+            )}
             {partner.delivery_available && partner.type === "shop" && (
               <Badge className="bg-blue-50 text-blue-800">Доставка</Badge>
             )}
@@ -36,6 +71,7 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
           <p className="flex items-center gap-1 text-sm text-neutral-600">
             <MapPin className="h-4 w-4" />
             {partner.address ?? "Адресу уточнити"}
+            {partner.district ? <span className="text-neutral-400">• {partner.district}</span> : null}
           </p>
         </div>
         {partner.rating_avg ? (
@@ -61,6 +97,8 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
         {partner.brands?.length ? (
           <Badge variant="outline">Бренди: {partner.brands.length}</Badge>
         ) : null}
+        {partner.type === "sto" && partner.hasTowService ? <Badge variant="outline">Евакуатор</Badge> : null}
+        {partner.type === "sto" && partner.mobileService ? <Badge variant="outline">Виїзд</Badge> : null}
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-2">
@@ -69,6 +107,11 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
             Перейти <ArrowUpRight className="h-4 w-4" />
           </Link>
         </Button>
+        {partner.type === "sto" && partner.onlineBookingEnabled && (
+          <Button asChild variant="outline" size="sm" className="flex-1 md:flex-none">
+            <Link href={partner.bookingUrl || detailHref}>{partner.bookingMode === "external" ? "Запис онлайн" : "Записатись"}</Link>
+          </Button>
+        )}
         <Button asChild size="sm" className="flex-1 md:flex-none">
           <Link href={ctaHref ?? "/request/repair"}>Залишити заявку</Link>
         </Button>

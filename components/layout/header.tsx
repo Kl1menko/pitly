@@ -15,10 +15,10 @@ export function Header() {
   const close = () => setOpen(false);
 
   const navLinks = [
+    { href: "/services", label: "Послуги" },
     { href: "/cities", label: "Міста" },
     { href: "/how-it-works", label: "Як це працює" },
-    { href: "/request/repair", label: "Заявка на ремонт" },
-    { href: "/request/parts", label: "Заявка на запчастини" }
+    { href: "/request/repair", label: "Заявка на ремонт" }
   ];
 
   useEffect(() => {
@@ -141,7 +141,7 @@ export function Header() {
               </button>
             </div>
 
-            <div className="flex h-[calc(88vh-64px)] flex-col px-5 pb-6 pt-4 overflow-y-auto">
+            <div className="flex h-[calc(88vh-64px)] flex-col px-5 pb-4 pt-4 overflow-y-auto">
               <nav className="flex flex-1 flex-col gap-2 text-base font-semibold text-neutral-900">
                 {navLinks.map((item) => (
                   <Link
@@ -157,7 +157,7 @@ export function Header() {
                 ))}
               </nav>
 
-              <div className="mt-auto flex flex-col gap-3 pt-6 pb-1">
+              <div className="mt-auto flex flex-col gap-3 pt-5 pb-7 [padding-bottom:calc(1.75rem+env(safe-area-inset-bottom))]">
                 {userEmail ? (
                   <>
                     <Link

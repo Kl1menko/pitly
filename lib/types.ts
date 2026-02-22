@@ -1,4 +1,22 @@
 export type PartnerType = "sto" | "shop";
+export type BookingMode = "none" | "phone" | "messenger" | "external";
+
+export type WeekdayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+export type DaySchedule = {
+  open?: string | null; // HH:mm
+  close?: string | null; // HH:mm
+  isOpen?: boolean;
+};
+export type WorkHours = Partial<Record<WeekdayKey, DaySchedule>>;
+
+export interface ServiceCategory {
+  id: string;
+  name: string;
+  slug: string;
+  short?: string | null;
+  description?: string | null;
+  sortOrder?: number | null;
+}
 
 export interface City {
   id: string;
@@ -14,6 +32,15 @@ export interface Service {
   name_ua: string;
   slug: string;
   category?: string | null;
+  categoryId?: string | null;
+  keywords?: string[];
+  isPopular?: boolean;
+  sortOrder?: number | null;
+}
+
+export interface StationService {
+  stationId: string;
+  serviceId: string;
 }
 
 export interface PartCategory {
@@ -42,10 +69,12 @@ export interface Partner {
   slug: string;
   city_id: string;
   address?: string | null;
+  district?: string | null;
   lat?: number | null;
   lng?: number | null;
   phone?: string | null;
   description?: string | null;
+  workHours?: WorkHours | null;
   verified?: boolean;
   status?: "pending" | "active" | "blocked";
   rating_avg?: number | null;
@@ -54,6 +83,12 @@ export interface Partner {
   categories?: { id: string; name_ua: string }[];
   brands?: string[];
   delivery_available?: boolean;
+  partsSalesEnabled?: boolean;
+  onlineBookingEnabled?: boolean;
+  bookingMode?: BookingMode;
+  bookingUrl?: string | null;
+  hasTowService?: boolean;
+  mobileService?: boolean;
 }
 
 export interface RequestPayloadBase {
@@ -73,6 +108,7 @@ export interface RepairRequestPayload extends RequestPayloadBase {
   service_id?: string | null;
   extra_services?: string[] | null;
   photos?: string[];
+  parts_needed?: boolean;
 }
 
 export interface PartsRequestPayload extends RequestPayloadBase {

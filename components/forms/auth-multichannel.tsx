@@ -1,17 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { writeSupabaseSessionCookies } from "@/lib/supabase/auth-cookies";
+import { submitPendingRequestIfAny } from "@/lib/requests/pending-client";
 import { Mail, Smartphone, Send as SendIcon, MessageCircle, Chrome } from "lucide-react";
 
 type Mode = "login" | "register";
 type Channel = "email" | "phone" | "telegram" | "viber" | "google";
 
 export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?: "client" | "partner_sto" | "partner_shop" }) {
+  const router = useRouter();
   const supabase = getSupabaseBrowserClient();
   const [channel, setChannel] = useState<Channel>("email");
   const [email, setEmail] = useState("");
@@ -46,9 +50,25 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
             options: { data: { role } }
           })
         : supabase.auth.signInWithPassword({ email, password });
-    const { error } = await fn;
+    const { data, error } = await fn;
     setLoading(false);
-    setMessage(error ? error.message : "Успішно, можна перейти до кабінету.");
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    if (data.session) {
+      writeSupabaseSessionCookies(data.session);
+      try {
+        const pending = await submitPendingRequestIfAny();
+        router.replace(pending.submitted ? "/thank-you" : "/dashboard");
+      } catch (submitError) {
+        console.error("pending request submit after email auth error", submitError);
+        setMessage("Увійшли, але відкладену заявку не вдалось надіслати. Спробуйте ще раз у формі.");
+        router.replace("/dashboard");
+      }
+      return;
+    }
+    setMessage("Успішно. Перевірте email для підтвердження (якщо увімкнено) і потім увійдіть.");
   };
 
   const sendOtp = async () => {
@@ -66,12 +86,21 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
   const verifyOtp = async () => {
     setLoading(true);
     setMessage(null);
-    const { error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
+    const { data, error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
     setLoading(false);
     if (error) setMessage(error.message);
     else {
       await supabase.auth.updateUser({ data: { role } });
+      writeSupabaseSessionCookies(data.session);
       setMessage("Успішний вхід");
+      try {
+        const pending = await submitPendingRequestIfAny();
+        router.replace(pending.submitted ? "/thank-you" : "/dashboard");
+      } catch (submitError) {
+        console.error("pending request submit after otp auth error", submitError);
+        setMessage("Увійшли, але відкладену заявку не вдалось надіслати. Спробуйте ще раз у формі.");
+        router.replace("/dashboard");
+      }
     }
   };
 

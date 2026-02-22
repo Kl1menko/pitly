@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Filter, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 import { type CarBrand, type Service } from "@/lib/types";
+import { serviceCategories } from "@/lib/services/taxonomy";
 
 function useQueryArray(param: string, searchParams: URLSearchParams) {
   const raw = searchParams.get(param);
@@ -16,20 +17,74 @@ function useQueryArray(param: string, searchParams: URLSearchParams) {
 
 export function StoFilters({
   services,
-  brands
+  brands,
+  defaultCategorySlug
 }: {
   services: Service[];
   brands: CarBrand[];
+  defaultCategorySlug?: string;
 }) {
-  const searchParams = useSearchParams() ?? new URLSearchParams();
+  const rawSearchParams = useSearchParams();
+  const searchParamsString = rawSearchParams?.toString() ?? "";
+  const searchParams = useMemo(() => new URLSearchParams(searchParamsString), [searchParamsString]);
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [serviceQuery, setServiceQuery] = useState("");
+  const [catalogQuery, setCatalogQuery] = useState(searchParams.get("q") ?? "");
 
   const activeServices = useQueryArray("services", searchParams);
+  const activeService = activeServices[0] ?? "";
+  const activeCategory = searchParams.get("category") ?? defaultCategorySlug ?? "";
+  const activeQuery = searchParams.get("q") ?? "";
   const activeBrand = searchParams.get("brand") ?? "";
   const verified = searchParams.get("verified") === "1";
+  const partsSales = searchParams.get("parts") === "1";
+  const onlineBooking = searchParams.get("online") === "1";
+  const openToday = searchParams.get("today") === "1";
+  const openNow = searchParams.get("openNow") === "1";
+  const evac = searchParams.get("evac") === "1";
   const sort = searchParams.get("sort") ?? "";
+
+  const categoryOptions = useMemo(
+    () =>
+      serviceCategories
+        .slice()
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((cat) => ({ slug: cat.slug, label: cat.name, id: cat.id })),
+    []
+  );
+
+  const serviceBySlug = useMemo(() => new Map(services.map((s) => [s.slug, s])), [services]);
+
+  const servicesFilteredByCategory = useMemo(() => {
+    const selectedCategory = categoryOptions.find((c) => c.slug === activeCategory);
+    if (!selectedCategory) return services;
+    return services.filter((s) => s.categoryId === selectedCategory.id);
+  }, [services, categoryOptions, activeCategory]);
+
+  const popularServices = useMemo(() => {
+    return servicesFilteredByCategory
+      .filter((s) => s.isPopular)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .slice(0, 8);
+  }, [servicesFilteredByCategory]);
+
+  const serviceSuggestions = useMemo(() => {
+    const q = serviceQuery.trim().toLowerCase();
+    if (!q) return [];
+    return servicesFilteredByCategory
+      .filter((s) => {
+        const hay = [s.name_ua, s.slug, ...(s.keywords ?? [])].join(" ").toLowerCase();
+        return hay.includes(q);
+      })
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .slice(0, 8);
+  }, [serviceQuery, servicesFilteredByCategory]);
+
+  useEffect(() => {
+    setCatalogQuery(new URLSearchParams(searchParamsString).get("q") ?? "");
+  }, [searchParamsString]);
 
   const apply = (next: Record<string, string | string[] | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -42,30 +97,114 @@ export function StoFilters({
         params.set(key, value);
       }
     });
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   const toggleService = (slug: string) => {
-    const set = new Set(activeServices);
-    if (set.has(slug)) set.delete(slug);
-    else set.add(slug);
-    apply({ services: Array.from(set) });
+    const current = activeServices[0];
+    const nextSlug = current === slug ? null : slug;
+    const selectedService = nextSlug ? serviceBySlug.get(nextSlug) : null;
+    const categorySlug =
+      selectedService?.categoryId
+        ? categoryOptions.find((c) => c.id === selectedService.categoryId)?.slug ?? null
+        : null;
+    apply({ services: nextSlug ? [nextSlug] : null, category: categorySlug });
+    setServiceQuery("");
+  };
+
+  const setCategory = (categorySlug: string) => {
+    apply({ category: categorySlug || null, services: null });
   };
 
   const panel = (
     <div className="flex flex-col gap-4">
       <div>
-        <p className="text-sm font-semibold text-neutral-800">Послуги</p>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {services.map((service) => (
-            <label key={service.slug} className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm">
-              <Checkbox checked={activeServices.includes(service.slug)} onChange={() => toggleService(service.slug)} />
-              {service.name_ua}
-            </label>
-          ))}
+        <p className="text-sm font-semibold text-neutral-800">Пошук по каталогу</p>
+        <div className="mt-2 flex gap-2">
+          <input
+            value={catalogQuery}
+            onChange={(e) => setCatalogQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                apply({ q: catalogQuery.trim() || null });
+              }
+            }}
+            placeholder="Назва сервісу, район, адреса..."
+            className="h-11 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-500"
+          />
+          <Button type="button" variant="outline" onClick={() => apply({ q: catalogQuery.trim() || null })}>
+            Знайти
+          </Button>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div>
+        <p className="text-sm font-semibold text-neutral-800">Послуга</p>
+        <div className="mt-2 space-y-2">
+          <input
+            value={serviceQuery}
+            onChange={(e) => setServiceQuery(e.target.value)}
+            placeholder="Напр. полірування, діагностика, шиномонтаж"
+            className="h-11 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-500"
+          />
+          {serviceSuggestions.length > 0 && (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {serviceSuggestions.map((service) => (
+                <button
+                  key={service.slug}
+                  type="button"
+                  onClick={() => toggleService(service.slug)}
+                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-sm font-medium text-neutral-800 hover:border-neutral-300"
+                >
+                  <div>{service.name_ua}</div>
+                  {service.categoryId && (
+                    <div className="text-xs text-neutral-500">
+                      {categoryOptions.find((c) => c.id === service.categoryId)?.label}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {popularServices.map((service) => (
+              <button
+                key={service.slug}
+                type="button"
+                onClick={() => toggleService(service.slug)}
+                className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${
+                  activeService === service.slug
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50"
+                }`}
+              >
+                {service.name_ua}
+              </button>
+            ))}
+          </div>
+          {activeService && (
+            <div className="text-xs text-neutral-600">
+              Обрана послуга: <span className="font-semibold text-neutral-900">{serviceBySlug.get(activeService)?.name_ua ?? activeService}</span>
+              <button type="button" className="ml-2 underline" onClick={() => apply({ services: null })}>
+                скинути
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <p className="text-sm font-semibold text-neutral-800">Категорія</p>
+          <Select value={activeCategory} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">Усі категорії</option>
+            {categoryOptions.map((cat) => (
+              <option key={cat.slug} value={cat.slug}>
+                {cat.label}
+              </option>
+            ))}
+          </Select>
+        </div>
         <div>
           <p className="text-sm font-semibold text-neutral-800">Марка авто</p>
           <Select value={activeBrand} onChange={(e) => apply({ brand: e.target.value || null })}>
@@ -81,6 +220,10 @@ export function StoFilters({
           <Checkbox checked={verified} onChange={(e) => apply({ verified: e.target.checked ? "1" : null })} />
           Перевірені
         </label>
+        <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
+          <Checkbox checked={partsSales} onChange={(e) => apply({ parts: e.target.checked ? "1" : null })} />
+          СТО з запчастинами
+        </label>
         <div>
           <p className="text-sm font-semibold text-neutral-800">Сортування</p>
           <Select value={sort} onChange={(e) => apply({ sort: e.target.value || null })}>
@@ -88,6 +231,27 @@ export function StoFilters({
             <option value="rating">Рейтинг</option>
             <option value="new">Нові</option>
           </Select>
+        </div>
+      </div>
+      <div className="rounded-xl border border-dashed border-neutral-200 p-3">
+        <p className="text-sm font-semibold text-neutral-800">Додатково</p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex items-center gap-2 text-sm text-neutral-800">
+            <Checkbox checked={onlineBooking} onChange={(e) => apply({ online: e.target.checked ? "1" : null })} />
+            Онлайн-запис
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-800">
+            <Checkbox checked={openToday} onChange={(e) => apply({ today: e.target.checked ? "1" : null })} />
+            Сьогодні працює
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-800">
+            <Checkbox checked={openNow} onChange={(e) => apply({ openNow: e.target.checked ? "1" : null })} />
+            Працює зараз
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-800">
+            <Checkbox checked={evac} onChange={(e) => apply({ evac: e.target.checked ? "1" : null })} />
+            Виїзд / евакуатор
+          </label>
         </div>
       </div>
     </div>
@@ -109,7 +273,13 @@ export function StoFilters({
       {open && <div className="md:hidden">{panel}</div>}
       <div className="flex flex-wrap gap-2 text-xs text-neutral-600">
         <Filter className="h-4 w-4" />
-        Активно: {activeServices.length} послуг, {activeBrand ? `бренд ${activeBrand}` : "будь-яка марка"}
+        Активно: {activeService ? "1 послуга" : "послуга не обрана"}, {activeCategory ? `категорія ${activeCategory}` : "усі категорії"},{" "}
+        {activeBrand ? `бренд ${activeBrand}` : "будь-яка марка"}
+        {activeQuery ? `, пошук: ${activeQuery}` : ""}
+        {partsSales ? ", СТО з запчастинами" : ""}
+        {onlineBooking ? ", онлайн-запис" : ""}
+        {openNow ? ", працює зараз" : openToday ? ", сьогодні працює" : ""}
+        {evac ? ", виїзд/евакуатор" : ""}
       </div>
     </div>
   );

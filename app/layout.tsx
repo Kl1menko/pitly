@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
+import { Toaster } from "sileo";
 
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
@@ -47,6 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="uk">
       <body className={`${manrope.variable} bg-neutral-50 text-neutral-900 transition-colors`}>
         <Providers>
+          <Toaster
+            position="top-right"
+            offset={{ top: 16, right: 16 }}
+            options={{ roundness: 20 }}
+          />
           <Header />
           <main className="min-h-screen bg-transparent pb-16 pt-8">{children}</main>
           <Footer />
