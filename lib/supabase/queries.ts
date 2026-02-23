@@ -59,6 +59,54 @@ function sortPartnersByRatingConfidence(list: Partner[]) {
   });
 }
 
+function normalizeCatalogSearchText(value?: string | null) {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’'`]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getPartnerQueryScore(partner: Partner, query: string) {
+  const q = normalizeCatalogSearchText(query);
+  if (!q) return 0;
+
+  const name = normalizeCatalogSearchText(partner.name);
+  const address = normalizeCatalogSearchText(partner.address);
+  const district = normalizeCatalogSearchText(partner.district);
+  const description = normalizeCatalogSearchText(partner.description);
+  const servicesText = normalizeCatalogSearchText(
+    (partner.services ?? [])
+      .map((s) => (typeof s === "string" ? s : s.name_ua || s.id))
+      .join(" ")
+  );
+
+  let score = 0;
+  if (name === q) score += 1200;
+  if (name.startsWith(q)) score += 700;
+  if (name.includes(q)) score += 450;
+  if (servicesText.includes(q)) score += 260;
+  if (address.includes(q)) score += 180;
+  if (district.includes(q)) score += 120;
+  if (description.includes(q)) score += 60;
+
+  // Small confidence bump from rating volume to stabilize ties.
+  score += Math.min(Number(partner.rating_count ?? 0), 200) * 0.3;
+  score += Number(partner.rating_avg ?? 0) * 2;
+  return score;
+}
+
+function rerankPartnersByQuery(list: Partner[], query?: string) {
+  if (!query?.trim()) return list;
+  return [...list].sort((a, b) => {
+    const scoreDiff = getPartnerQueryScore(b, query) - getPartnerQueryScore(a, query);
+    if (Math.abs(scoreDiff) > 0.001) return scoreDiff;
+    return Number(b.rating_count ?? 0) - Number(a.rating_count ?? 0);
+  });
+}
+
 export async function getCities(): Promise<City[]> {
   if (!supabaseReady) return demoCities;
   const supabase = getSupabaseServerClient();
@@ -290,7 +338,7 @@ export async function getPartnersByCityPage(params: {
     mobile_service?: boolean;
   };
 
-  const items: Partner[] = (((data as unknown) as RawPartner[] | null) ?? []).map((p) => ({
+  let items: Partner[] = (((data as unknown) as RawPartner[] | null) ?? []).map((p) => ({
     ...p,
     services: p.partner_services?.map((s) => serviceByIdOrSlug.get(s.service_id) || { id: s.service_id, name_ua: s.service_id }),
     categories: p.shop_part_offers?.map(
@@ -306,6 +354,10 @@ export async function getPartnersByCityPage(params: {
     hasTowService: p.has_tow_service ?? p.hasTowService ?? false,
     mobileService: p.mobile_service ?? p.mobileService ?? false
   }));
+
+  if (filters?.q) {
+    items = rerankPartnersByQuery(items, filters.q);
+  }
 
   const total = Number(count ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / perPage));
