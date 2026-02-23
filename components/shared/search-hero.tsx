@@ -56,19 +56,7 @@ export function SearchHero({ cities }: { cities: City[] }) {
         </div>
         <div className="flex flex-col items-center gap-3">
           <h1 className="w-full text-2xl font-bold leading-tight text-neutral-900 sm:text-3xl md:text-4xl">
-            Перевірені автосервіси — зручно знайти,{" "}
-            <span className="inline-flex items-center gap-2 align-middle">
-              <span>легко обрати</span>
-              <video
-                src="/videos/Check.webm"
-                autoPlay
-                loop
-                muted
-                playsInline
-                aria-hidden="true"
-                className="h-7 w-7 rounded-full object-contain sm:h-8 sm:w-8 md:h-9 md:w-9"
-              />
-            </span>
+            Перевірені автосервіси — зручно знайти, легко обрати
           </h1>
           <p className="max-w-3xl text-base text-neutral-700 sm:text-lg">
             Знайдіть сервіс за послугою або опишіть проблему — підкажемо напрямок і покажемо
