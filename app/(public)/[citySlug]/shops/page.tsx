@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { PartnerCard } from "@/components/cards/partner-card";
 import { ShopFilters } from "@/components/filters/shop-filters";
+import { ResultsPagination } from "@/components/shared/results-pagination";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCityBySlug, getPartCategories, getPartnersByCity } from "@/lib/supabase/queries";
 
@@ -30,6 +31,9 @@ export async function generateMetadata({ params }: { params: { citySlug: string 
 export default async function ShopsCityPage({ params, searchParams }: Props) {
   const city = await getCityBySlug(params.citySlug);
   if (!city) return notFound();
+  const pageParam = typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
+  const perPage = 20;
 
   const categories = await getPartCategories();
   const brands = await getBrands();
@@ -45,6 +49,9 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
       delivery: searchParams.delivery === "1"
     }
   });
+  const totalPages = Math.max(1, Math.ceil(partners.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paginatedPartners = partners.slice((safePage - 1) * perPage, safePage * perPage);
 
   const faq = [
     {
@@ -87,12 +94,32 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
         <ShopFilters categories={categories} brands={brands} />
       </Suspense>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {partners.length === 0 && <Card>Немає магазинів за цими фільтрами.</Card>}
-        {partners.map((partner) => (
+      <Card className="bg-white/90 ring-1 ring-neutral-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <p className="font-semibold text-neutral-900">Знайдено {partners.length} магазинів</p>
+          <p className="text-neutral-600">
+            {partners.length > 0
+              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partners.length)} з ${partners.length} • сторінка ${safePage} з ${totalPages}`
+              : `Сторінка ${safePage} з ${totalPages}`}
+          </p>
+        </div>
+      </Card>
+
+      <div className="grid min-h-[240px] content-start gap-4 md:grid-cols-2">
+        {partners.length === 0 && (
+          <Card className="md:col-span-2 flex min-h-[220px] items-center justify-center border-dashed text-center bg-neutral-50/80">
+            <div className="max-w-xl space-y-2">
+              <p className="text-lg font-semibold text-neutral-900">Немає магазинів за цими фільтрами</p>
+              <p className="text-sm text-neutral-700">Змініть категорії, бренд або інші параметри фільтрації.</p>
+            </div>
+          </Card>
+        )}
+        {paginatedPartners.map((partner) => (
           <PartnerCard key={partner.id} partner={partner} ctaHref={`/request/parts?city=${params.citySlug}`} />
         ))}
       </div>
+
+      <ResultsPagination pathname={`/${params.citySlug}/shops`} searchParams={searchParams} page={safePage} totalPages={totalPages} />
 
       <Card className="space-y-2 bg-white/90 ring-1 ring-neutral-200">
         <h3 className="text-lg font-bold">FAQ про запчастини у {cityName}</h3>

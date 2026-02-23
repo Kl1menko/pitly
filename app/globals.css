@@ -23,6 +23,11 @@ a {
   @apply rounded-2xl border border-neutral-200 bg-white shadow-sm;
 }
 
+/* Keep Leaflet maps and controls below the sticky header */
+.leaflet-container {
+  z-index: 0 !important;
+}
+
 /* Sileo toast theming to match Pitly dark/neutral UI */
 [data-sileo-viewport] {
   z-index: 80;

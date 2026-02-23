@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { clearSupabaseSessionCookies, writeSupabaseSessionCookies } from "@/lib/supabase/auth-cookies";
 
 export function Header() {
   const [open, setOpen] = useState(false);
@@ -33,12 +34,21 @@ export function Header() {
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
+    supabase.auth.getSession().then(({ data }) => {
+      const session = data.session;
+      setUserEmail(session?.user?.email ?? null);
+      if (session) {
+        writeSupabaseSessionCookies(session);
+      }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setUserEmail(session?.user?.email ?? null);
+      if (session) {
+        writeSupabaseSessionCookies(session);
+      } else if (event === "SIGNED_OUT") {
+        clearSupabaseSessionCookies();
+      }
     });
     return () => {
       listener.subscription.unsubscribe();

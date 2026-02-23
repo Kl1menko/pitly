@@ -18,7 +18,7 @@ function formatRegionLabel(region?: string | null) {
 }
 
 export default async function CitiesPage() {
-  const cities = await getCities();
+  const cities = (await getCities()).filter((city) => city.slug !== "donetsk" && city.slug !== "luhansk");
 
   return (
     <div className="mx-auto max-w-6xl px-4">
@@ -33,12 +33,12 @@ export default async function CitiesPage() {
               <p className="text-lg font-semibold">{city.name_ua}</p>
               <p className="text-sm text-neutral-600">{formatRegionLabel(city.region_ua)}</p>
             </div>
-            <div className="mt-auto flex items-center gap-3 text-sm font-semibold text-primary">
-              <Link href={`/${city.slug}/sto`} className="flex items-center gap-1">
-                СТО <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href={`/${city.slug}/services/sto-remont`} className="flex items-center gap-1">
-                Послуги <ArrowRight className="h-4 w-4" />
+            <div className="mt-auto">
+              <Link
+                href={`/${city.slug}`}
+                className="inline-flex items-center gap-1 text-sm font-semibold text-primary"
+              >
+                Переглянути <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </Card>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, MapPin, Star } from "lucide-react";
+import { ArrowUpRight, BadgeCheck, MapPin, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,186 @@ function getOpenStatus(partner: Partner) {
   return { today: true, now: nowMin >= open && nowMin <= close };
 }
 
+function getTodayWorkHoursLabel(partner: Partner) {
+  const day = partner.workHours?.[getWeekdayKey()];
+  if (!day) return "Графік не вказано";
+  if (day.isOpen === false) return "Зачинено сьогодні";
+  if (!day.open || !day.close) return "Графік не вказано";
+  if (day.open === "00:00" && (day.close === "23:59" || day.close === "24:00")) return "Цілодобово";
+  return `Сьогодні: ${day.open}–${day.close}`;
+}
+
+function transliterateToUkr(value: string) {
+  let text = value;
+  const rules: Array<[RegExp, string]> = [
+    [/shch/gi, "щ"],
+    [/zh/gi, "ж"],
+    [/kh/gi, "х"],
+    [/ts/gi, "ц"],
+    [/ch/gi, "ч"],
+    [/sh/gi, "ш"],
+    [/yu/gi, "ю"],
+    [/ya/gi, "я"],
+    [/ye/gi, "є"],
+    [/yy/gi, "и"],
+    [/a/gi, "а"],
+    [/b/gi, "б"],
+    [/v/gi, "в"],
+    [/h/gi, "г"],
+    [/g/gi, "ґ"],
+    [/d/gi, "д"],
+    [/e/gi, "е"],
+    [/z/gi, "з"],
+    [/y/gi, "й"],
+    [/i/gi, "і"],
+    [/j/gi, "й"],
+    [/k/gi, "к"],
+    [/l/gi, "л"],
+    [/m/gi, "м"],
+    [/n/gi, "н"],
+    [/o/gi, "о"],
+    [/p/gi, "п"],
+    [/r/gi, "р"],
+    [/s/gi, "с"],
+    [/t/gi, "т"],
+    [/u/gi, "у"],
+    [/f/gi, "ф"],
+    [/w/gi, "в"],
+    [/x/gi, "кс"],
+    [/q/gi, "к"],
+    [/c/gi, "к"]
+  ];
+  for (const [pattern, replacement] of rules) {
+    text = text.replace(pattern, replacement);
+  }
+  return text.replace(/'+/g, "");
+}
+
+function titleCaseWords(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function normalizeAddressPiece(value: string) {
+  return value.toLowerCase().replace(/[^a-zа-яіїєґ0-9]+/gi, "");
+}
+
+function localizeStreetToken(value: string) {
+  const hasRoadPrefix = /\b(a\/d|autodor|автодор)/i.test(value);
+  const hasStreetSuffix = /\b(Street|St\.?)\b/i.test(value);
+  let localized = value
+    .replace(/\bA\/d\b/gi, "автодорога")
+    .replace(/\bAutodoroga\b/gi, "автодорога")
+    .replace(/\bStreet\b/gi, "вулиця")
+    .replace(/\bSt\b\.?/gi, "вулиця")
+    .replace(/\bAvenue\b/gi, "проспект")
+    .replace(/\bAve\b\.?/gi, "проспект")
+    .replace(/\bBoulevard\b/gi, "бульвар")
+    .replace(/\bBlvd\b\.?/gi, "бульвар")
+    .replace(/\bLane\b/gi, "провулок")
+    .replace(/\bLn\b\.?/gi, "провулок");
+  localized = titleCaseWords(transliterateToUkr(localized))
+    .replace(/\bЛвів/g, "Львів")
+    .replace(/\bлвів/g, "львів")
+    .replace(/\bЛьвівска\b/g, "Львівська")
+    .replace(/\bльвівска\b/g, "львівська")
+    .replace(/Тска\b/g, "Цька")
+    .replace(/тска\b/g, "цька")
+    .replace(/Цка\b/g, "Цька")
+    .replace(/цка\b/g, "цька")
+    .replace(/Ска\b/g, "Ська")
+    .replace(/ска\b/g, "ська")
+    .replace(/\bКм\b/g, "км");
+  if (hasStreetSuffix && /Вулиця\s*$/i.test(localized)) {
+    localized = `вулиця ${localized.replace(/\s*Вулиця\s*$/i, "").trim()}`;
+  }
+  if (hasRoadPrefix && !/^автодорога /i.test(localized)) {
+    localized = `автодорога ${localized.replace(/^Автодорога\s*/i, "").trim()}`;
+  }
+  return localized;
+}
+
+function localizeCityName(value: string) {
+  const compact = value.toLowerCase().replace(/[^a-z']/g, "");
+  const cityMap: Record<string, string> = {
+    kyiv: "Київ",
+    kiev: "Київ",
+    lviv: "Львів",
+    "l'viv": "Львів",
+    dnipro: "Дніпро",
+    odesa: "Одеса",
+    odessa: "Одеса",
+    kharkiv: "Харків",
+    vinnytsia: "Вінниця",
+    zaporizhzhia: "Запоріжжя",
+    mykolaiv: "Миколаїв",
+    chernihiv: "Чернігів",
+    poltava: "Полтава"
+  };
+  return cityMap[compact] || titleCaseWords(transliterateToUkr(value));
+}
+
+function formatAddressShort(address?: string | null) {
+  if (!address) return "Адресу уточнити";
+  const parts = address
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .filter((p) => !/ukraine|область|oblast|^\d{5,6}$/i.test(p));
+  if (!parts.length) return "Адресу уточнити";
+
+  const uniqueParts = parts.filter((part, idx, arr) => {
+    const current = normalizeAddressPiece(part);
+    if (!current) return false;
+    return arr.findIndex((other) => normalizeAddressPiece(other) === current) === idx;
+  });
+
+  const streetPart =
+    uniqueParts.find((p) => /\b(st|street|ave|avenue|blvd|boulevard|ln|lane)\b/i.test(p)) ||
+    uniqueParts.find((p) => /вул|вулиця|просп|бульвар|пров/i.test(p)) ||
+    uniqueParts.find((p) => /\b(a\/d|autodor|автодор)\b/i.test(p)) ||
+    uniqueParts[0];
+  const cityPart =
+    uniqueParts.find((p) =>
+      /^(kyiv|kiev|lviv|l'viv|dnipro|odesa|odessa|kharkiv|vinnytsia|zaporizhzhia|mykolaiv|chernihiv|poltava)$/i.test(p)
+    ) ||
+    uniqueParts.find(
+      (p) =>
+        p !== streetPart &&
+        !/\b(st|street|ave|avenue|blvd|boulevard|ln|lane)\b/i.test(p) &&
+        !/\b(a\/d|autodor|автодор)\b/i.test(p) &&
+        !/^\s*км\b/i.test(p) &&
+        !/^\s*\d+[a-zа-яіїєґ/-]*\s*$/i.test(p)
+    ) ||
+    "";
+  const numberPart =
+    uniqueParts.find((p) => /\d/.test(p) && p !== streetPart && p.length <= 24) ||
+    (streetPart.match(/\d+[A-Za-zА-Яа-я/-]*/)?.[0] ?? "");
+
+  const streetLocalized = localizeStreetToken(streetPart);
+  const streetHasKm = /\bкм\b/i.test(streetLocalized) || /\bkm\b/i.test(streetPart);
+  const normalizedStreet = normalizeAddressPiece(streetLocalized);
+  const normalizedNumber = numberPart ? normalizeAddressPiece(numberPart) : "";
+
+  const pieces = [
+    streetLocalized,
+    streetHasKm || normalizedStreet === normalizedNumber ? "" : numberPart,
+    cityPart ? localizeCityName(cityPart) : ""
+  ]
+    .filter(Boolean)
+    .filter((part, idx, arr) => arr.findIndex((other) => normalizeAddressPiece(other) === normalizeAddressPiece(part)) === idx);
+
+  return pieces.join(", ");
+}
+
 export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: string }) {
   const detailHref = partner.type === "sto" ? `/sto/${partner.slug}` : `/shop/${partner.slug}`;
   const openStatus = getOpenStatus(partner);
+  const displayAddress = formatAddressShort(partner.address);
+  const workHoursLabel = partner.type === "sto" ? getTodayWorkHoursLabel(partner) : null;
 
   const serviceLabel = (s: { id: string; name_ua?: string } | string) => {
     const key = typeof s === "string" ? s : s.id;
@@ -64,15 +241,23 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
             {partner.type === "sto" && !openStatus.now && openStatus.today && (
               <Badge className="bg-lime-50 text-lime-800">Сьогодні працює</Badge>
             )}
+            {partner.type === "sto" && !partner.workHours && (
+              <Badge className="bg-neutral-100 text-neutral-700">Графік не вказано</Badge>
+            )}
             {partner.delivery_available && partner.type === "shop" && (
               <Badge className="bg-blue-50 text-blue-800">Доставка</Badge>
             )}
           </div>
           <p className="flex items-center gap-1 text-sm text-neutral-600">
             <MapPin className="h-4 w-4" />
-            {partner.address ?? "Адресу уточнити"}
+            {displayAddress}
             {partner.district ? <span className="text-neutral-400">• {partner.district}</span> : null}
           </p>
+          {partner.type === "sto" && (
+            <p className="text-sm text-neutral-600">
+              <span className="font-medium text-neutral-800">Години роботи:</span> {workHoursLabel}
+            </p>
+          )}
         </div>
         {partner.rating_avg ? (
           <span className="flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-700">
@@ -81,7 +266,16 @@ export function PartnerCard({ partner, ctaHref }: { partner: Partner; ctaHref?: 
         ) : null}
       </div>
 
-      <p className="text-sm text-neutral-700 line-clamp-2">{partner.description || "Партнер Pitly"}</p>
+      {(partner.description || partner.verified) && (
+        <p className="text-sm text-neutral-700 line-clamp-2">
+          {partner.description || (
+            <span className="inline-flex items-center gap-1 text-emerald-700">
+              <BadgeCheck className="h-4 w-4" />
+              Партнер Pitly
+            </span>
+          )}
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {partner.services?.slice(0, 3).map((s) => (

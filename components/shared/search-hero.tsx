@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { CitySelector } from "@/components/shared/city-selector";
@@ -12,10 +12,31 @@ export function SearchHero({ cities }: { cities: City[] }) {
   const router = useRouter();
   const [city, setCity] = useState<string>("");
   const [query, setQuery] = useState("");
+  const [cityError, setCityError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedCity = window.localStorage.getItem("pitly_home_search_city");
+    const savedQuery = window.localStorage.getItem("pitly_home_search_query");
+    if (savedCity && cities.some((c) => c.slug === savedCity)) {
+      setCity(savedCity);
+    }
+    if (savedQuery) {
+      setQuery(savedQuery);
+    }
+  }, [cities]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!city) return;
+    if (!city) {
+      setCityError("Оберіть місто, щоб запустити пошук");
+      return;
+    }
+    setCityError(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("pitly_home_search_city", city);
+      window.localStorage.setItem("pitly_home_search_query", query.trim());
+    }
     const params = new URLSearchParams();
     if (query.trim()) params.set("q", query.trim());
     router.push(`/${city}${params.toString() ? `?${params.toString()}` : ""}`);
@@ -35,7 +56,19 @@ export function SearchHero({ cities }: { cities: City[] }) {
         </div>
         <div className="flex flex-col items-center gap-3">
           <h1 className="w-full text-2xl font-bold leading-tight text-neutral-900 sm:text-3xl md:text-4xl">
-            Перевірені автосервіси — зручно знайти, легко обрати
+            Перевірені автосервіси — зручно знайти,{" "}
+            <span className="inline-flex items-center gap-2 align-middle">
+              <span>легко обрати</span>
+              <video
+                src="/videos/Check.webm"
+                autoPlay
+                loop
+                muted
+                playsInline
+                aria-hidden="true"
+                className="h-7 w-7 rounded-full object-contain sm:h-8 sm:w-8 md:h-9 md:w-9"
+              />
+            </span>
           </h1>
           <p className="max-w-3xl text-base text-neutral-700 sm:text-lg">
             Знайдіть сервіс за послугою або опишіть проблему — підкажемо напрямок і покажемо
@@ -50,18 +83,36 @@ export function SearchHero({ cities }: { cities: City[] }) {
             <label className="text-left text-sm font-semibold text-neutral-800">Що потрібно?</label>
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setQuery(next);
+                if (typeof window !== "undefined") {
+                  window.localStorage.setItem("pitly_home_search_query", next);
+                }
+              }}
               placeholder="діагностика, полірування, шиномонтаж…"
               className="h-11"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
             <label className="text-left text-sm font-semibold text-neutral-800">Місто</label>
-            <CitySelector cities={cities} value={city} onChange={setCity} />
+            <CitySelector
+              cities={cities}
+              value={city}
+              onChange={(nextCity) => {
+                setCity(nextCity);
+                if (typeof window !== "undefined") {
+                  window.localStorage.setItem("pitly_home_search_city", nextCity);
+                }
+                if (nextCity) setCityError(null);
+              }}
+            />
+            {cityError ? <p className="mt-1 text-left text-xs font-medium text-rose-600">{cityError}</p> : null}
           </div>
           <Button
             size="lg"
             type="submit"
+            disabled={!city}
             className="w-full shadow-lg shadow-neutral-300 transition hover:-translate-y-0.5 hover:shadow-neutral-400 md:w-40"
           >
             Знайти

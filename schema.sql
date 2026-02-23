@@ -53,6 +53,25 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default timezone('utc', now())
 );
 create index if not exists profiles_role_idx on public.profiles(role);
+alter table public.profiles add column if not exists telegram text;
+create unique index if not exists profiles_telegram_idx on public.profiles(telegram) where telegram is not null;
+
+create table if not exists public.telegram_auth_tokens (
+  id uuid primary key default gen_random_uuid(),
+  token text not null unique,
+  code text not null,
+  mode text not null check (mode in ('login','register')),
+  role text not null check (role in ('client','partner_sto','partner_shop')),
+  status text not null default 'pending' check (status in ('pending','bot_confirmed','consumed','expired')),
+  telegram_user_id text,
+  telegram_username text,
+  telegram_chat_id text,
+  expires_at timestamptz not null,
+  consumed_at timestamptz,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index if not exists telegram_auth_tokens_status_idx on public.telegram_auth_tokens(status);
+create index if not exists telegram_auth_tokens_expires_idx on public.telegram_auth_tokens(expires_at);
 
 create table if not exists public.partners (
   id uuid primary key default gen_random_uuid(),
@@ -88,6 +107,9 @@ alter table public.partners add column if not exists booking_mode text not null 
 alter table public.partners add column if not exists booking_url text;
 alter table public.partners add column if not exists has_tow_service boolean not null default false;
 alter table public.partners add column if not exists mobile_service boolean not null default false;
+alter table public.partners add column if not exists google_place_id text;
+alter table public.partners add column if not exists google_types text[] not null default '{}'::text[];
+create unique index if not exists partners_google_place_id_uidx on public.partners(google_place_id);
 
 create table if not exists public.service_categories (
   id uuid primary key default gen_random_uuid(),

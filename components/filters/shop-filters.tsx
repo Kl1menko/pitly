@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { PackageSearch, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export function ShopFilters({
   const searchParams = useSearchParams() ?? new URLSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
   const activeCategories = useQueryArray("categories", searchParams);
@@ -42,7 +43,19 @@ export function ShopFilters({
         params.set(key, value);
       }
     });
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    const href = query ? `${pathname}?${query}` : pathname;
+    startTransition(() => {
+      router.replace(href, { scroll: false });
+      router.refresh();
+    });
+  };
+
+  const resetAll = () => {
+    startTransition(() => {
+      router.replace(pathname, { scroll: false });
+      router.refresh();
+    });
   };
 
   const toggleCategory = (slug: string) => {
@@ -96,11 +109,17 @@ export function ShopFilters({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Каталог</p>
           <h3 className="text-lg font-bold text-neutral-900">Фільтри</h3>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)} className="md:hidden">
-          <SlidersHorizontal className="h-4 w-4" />
-          Налаштувати
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={resetAll} className="hidden md:inline-flex">
+            Скинути
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)} className="md:hidden">
+            <SlidersHorizontal className="h-4 w-4" />
+            Налаштувати
+          </Button>
+        </div>
       </div>
+      {isPending && <div className="text-xs font-semibold text-neutral-500">Оновлюємо результати...</div>}
       <div className="hidden md:block">{panel}</div>
       {open && <div className="md:hidden">{panel}</div>}
       <div className="flex flex-wrap gap-2 text-xs text-neutral-600">

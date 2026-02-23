@@ -41,6 +41,24 @@ function isOpenNow(partner: Partner) {
   return nowMin >= open && nowMin <= close;
 }
 
+function getRatingSortScore(partner: Pick<Partner, "rating_avg" | "rating_count">) {
+  const avg = Number(partner.rating_avg ?? 0);
+  const count = Number(partner.rating_count ?? 0);
+  const priorMean = 4.2;
+  const priorWeight = 8;
+  return ((count * avg) + priorWeight * priorMean) / (count + priorWeight);
+}
+
+function sortPartnersByRatingConfidence(list: Partner[]) {
+  return [...list].sort((a, b) => {
+    const scoreDiff = getRatingSortScore(b) - getRatingSortScore(a);
+    if (Math.abs(scoreDiff) > 0.0001) return scoreDiff;
+    const countDiff = Number(b.rating_count ?? 0) - Number(a.rating_count ?? 0);
+    if (countDiff !== 0) return countDiff;
+    return Number(b.rating_avg ?? 0) - Number(a.rating_avg ?? 0);
+  });
+}
+
 export async function getCities(): Promise<City[]> {
   if (!supabaseReady) return demoCities;
   const supabase = getSupabaseServerClient();
@@ -162,7 +180,7 @@ export async function getPartnersByCity(params: {
       list = list.filter((p) => p.hasTowService || p.mobileService);
     }
     if (filters?.sort === "rating") {
-      list = [...list].sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
+      list = sortPartnersByRatingConfidence(list);
     }
     return list;
   };
@@ -179,18 +197,47 @@ export async function getPartnersByCity(params: {
       : null;
   if (!city) return fallback();
 
-  const { data, error } = await supabase
-    .from("partners")
-    .select(
-      "*, partner_services(service_id), shop_part_offers(category_id, delivery_available), partner_car_compatibility(brand_id)"
-    )
-    .eq("type", type)
-    .eq("city_id", city.id)
-    .eq("status", "active");
+  const selectClause =
+    "*, partner_services(service_id), shop_part_offers(category_id, delivery_available), partner_car_compatibility(brand_id)";
+  const pageSize = 1000;
+  let from = 0;
+  const rawRows: unknown[] = [];
+  let fetchError: unknown = null;
 
-  if (error) {
-    console.warn("Supabase getPartnersByCity error", error);
+  while (true) {
+    const { data, error } = await supabase
+      .from("partners")
+      .select(selectClause)
+      .eq("type", type)
+      .eq("city_id", city.id)
+      .eq("status", "active")
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      fetchError = error;
+      break;
+    }
+
+    rawRows.push(...(data ?? []));
+    if (!data || data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  if (fetchError) {
+    console.warn("Supabase getPartnersByCity error", fetchError);
     return fallback();
+  }
+
+  const [servicesCatalog, partCategoriesCatalog] = await Promise.all([getServices(), getPartCategories()]);
+  const serviceByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const svc of servicesCatalog) {
+    serviceByIdOrSlug.set(svc.id, { id: svc.id, name_ua: svc.name_ua });
+    serviceByIdOrSlug.set(svc.slug, { id: svc.id, name_ua: svc.name_ua });
+  }
+  const partCategoryByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const cat of partCategoriesCatalog) {
+    partCategoryByIdOrSlug.set(cat.id, { id: cat.id, name_ua: cat.name_ua });
+    partCategoryByIdOrSlug.set(cat.slug, { id: cat.id, name_ua: cat.name_ua });
   }
 
   type RawPartner = Partner & {
@@ -207,13 +254,13 @@ export async function getPartnersByCity(params: {
   };
 
   let partners: Partner[] =
-    (data as RawPartner[] | null)?.map((p) => ({
+    (rawRows as RawPartner[]).map((p) => ({
       ...p,
       services: p.partner_services?.map(
-        (s) => demoServices.find((svc) => svc.id === s.service_id || svc.slug === s.service_id) || { id: s.service_id, name_ua: s.service_id }
+        (s) => serviceByIdOrSlug.get(s.service_id) || { id: s.service_id, name_ua: s.service_id }
       ),
       categories: p.shop_part_offers?.map(
-        (s) => demoPartCategories.find((cat) => cat.id === s.category_id || cat.slug === s.category_id) || { id: s.category_id, name_ua: s.category_id }
+        (s) => partCategoryByIdOrSlug.get(s.category_id) || { id: s.category_id, name_ua: s.category_id }
       ),
       brands: p.partner_car_compatibility?.map((c) => c.brand_id),
       delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false,
@@ -297,7 +344,7 @@ export async function getPartnersByCity(params: {
     partners = partners.filter((p) => p.hasTowService || p.mobileService);
   }
   if (filters?.sort === "rating") {
-    partners = [...partners].sort((a, b) => (b.rating_avg ?? 0) - (a.rating_avg ?? 0));
+    partners = sortPartnersByRatingConfidence(partners);
   }
 
   return partners;
@@ -351,14 +398,25 @@ export async function getPartnerBySlug(type: PartnerType, slug: string): Promise
       )
     };
   }
+  const [servicesCatalog, partCategoriesCatalog] = await Promise.all([getServices(), getPartCategories()]);
+  const serviceByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const svc of servicesCatalog) {
+    serviceByIdOrSlug.set(svc.id, { id: svc.id, name_ua: svc.name_ua });
+    serviceByIdOrSlug.set(svc.slug, { id: svc.id, name_ua: svc.name_ua });
+  }
+  const partCategoryByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const cat of partCategoriesCatalog) {
+    partCategoryByIdOrSlug.set(cat.id, { id: cat.id, name_ua: cat.name_ua });
+    partCategoryByIdOrSlug.set(cat.slug, { id: cat.id, name_ua: cat.name_ua });
+  }
   return {
     ...data,
     services: data.partner_services
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ?.map((s: any) => demoServices.find((svc) => svc.id === s.service_id) || { id: s.service_id, name_ua: s.service_id }),
+      ?.map((s: any) => serviceByIdOrSlug.get(s.service_id) || { id: s.service_id, name_ua: s.service_id }),
     categories: data.shop_part_offers
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ?.map((s: any) => demoPartCategories.find((cat) => cat.id === s.category_id) || { id: s.category_id, name_ua: s.category_id }),
+      ?.map((s: any) => partCategoryByIdOrSlug.get(s.category_id) || { id: s.category_id, name_ua: s.category_id }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delivery_available: data.shop_part_offers?.some((s: any) => s.delivery_available) ?? false,
     partsSalesEnabled: data.parts_sales_enabled ?? (data.shop_part_offers?.length ?? 0) > 0,

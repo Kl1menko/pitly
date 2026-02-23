@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Home, Inbox, ListChecks, LogOut, Settings, User } from "lucide-react";
+import { BarChart3, Database, Home, Inbox, ListChecks, LogOut, Settings, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -11,6 +11,7 @@ const links = [
   { href: "/dashboard/offers", label: "Пропозиції", icon: ListChecks },
   { href: "/dashboard/orders", label: "Замовлення", icon: BarChart3 },
   { href: "/dashboard/analytics", label: "Аналітика", icon: BarChart3 },
+  { href: "/dashboard/import-review", label: "Імпорт (ревʼю)", icon: Database },
   { href: "/dashboard/profile", label: "Профіль", icon: User },
   { href: "/dashboard/settings", label: "Налаштування", icon: Settings }
 ];

@@ -17,7 +17,6 @@ export default function LoginPage() {
           </div>
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-neutral-500">Кабінет</p>
           <h1 className="text-3xl font-bold text-neutral-900 sm:text-4xl">Вхід до Pitly</h1>
-          <p className="text-sm text-neutral-600">Email/пароль, код у SMS/месенджерах або Google Sign‑In.</p>
         </div>
         <Card className="w-full rounded-3xl border border-neutral-200/70 bg-white/90 p-4 shadow-xl backdrop-blur sm:p-6">
           <AuthPortal defaultMode="login" defaultRole="client" />

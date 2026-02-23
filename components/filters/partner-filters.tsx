@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Filter, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,53 @@ import { serviceCategories } from "@/lib/services/taxonomy";
 function useQueryArray(param: string, searchParams: URLSearchParams) {
   const raw = searchParams.get(param);
   return raw ? raw.split(",").filter(Boolean) : [];
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’'`]/g, "")
+    .replace(/ь/g, "")
+    .replace(/ы/g, "и")
+    .replace(/ё/g, "е")
+    .replace(/э/g, "е")
+    .replace(/ї/g, "і")
+    .replace(/є/g, "е")
+    .replace(/ґ/g, "г")
+    .replace(/й/g, "и")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function serviceMatchesQuery(service: Service, qRaw: string, qNorm: string, categoryLabel?: string) {
+  const rawHay = [service.name_ua, service.slug, ...(service.keywords ?? []), categoryLabel ?? ""].join(" ").toLowerCase();
+  if (qRaw && rawHay.includes(qRaw)) return true;
+  const normHay = normalizeSearchText(rawHay);
+  if (qNorm && normHay.includes(qNorm)) return true;
+  return false;
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function highlightMatch(text: string, query: string) {
+  const q = query.trim();
+  if (!q) return text;
+  const regex = new RegExp(`(${escapeRegExp(q)})`, "ig");
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return parts.map((part, idx) =>
+    part.toLowerCase() === q.toLowerCase() ? (
+      <mark key={`${part}-${idx}`} className="rounded bg-amber-100 px-0.5 text-neutral-900">
+        {part}
+      </mark>
+    ) : (
+      <span key={`${part}-${idx}`}>{part}</span>
+    )
+  );
 }
 
 export function StoFilters({
@@ -29,6 +76,7 @@ export function StoFilters({
   const searchParams = useMemo(() => new URLSearchParams(searchParamsString), [searchParamsString]);
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [serviceQuery, setServiceQuery] = useState("");
   const [catalogQuery, setCatalogQuery] = useState(searchParams.get("q") ?? "");
@@ -70,17 +118,31 @@ export function StoFilters({
       .slice(0, 8);
   }, [servicesFilteredByCategory]);
 
-  const serviceSuggestions = useMemo(() => {
-    const q = serviceQuery.trim().toLowerCase();
-    if (!q) return [];
+  const serviceSuggestionsInCategory = useMemo(() => {
+    const qRaw = serviceQuery.trim().toLowerCase();
+    const qNorm = normalizeSearchText(serviceQuery);
+    if (!qNorm && !qRaw) return [];
     return servicesFilteredByCategory
-      .filter((s) => {
-        const hay = [s.name_ua, s.slug, ...(s.keywords ?? [])].join(" ").toLowerCase();
-        return hay.includes(q);
-      })
+      .filter((s) => serviceMatchesQuery(s, qRaw, qNorm, categoryOptions.find((c) => c.id === s.categoryId)?.label))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
       .slice(0, 8);
-  }, [serviceQuery, servicesFilteredByCategory]);
+  }, [serviceQuery, servicesFilteredByCategory, categoryOptions]);
+
+  const serviceSuggestionsGlobal = useMemo(() => {
+    const qRaw = serviceQuery.trim().toLowerCase();
+    const qNorm = normalizeSearchText(serviceQuery);
+    if (!qNorm && !qRaw) return [];
+    return services
+      .filter((s) => serviceMatchesQuery(s, qRaw, qNorm, categoryOptions.find((c) => c.id === s.categoryId)?.label))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .slice(0, 8);
+  }, [serviceQuery, services, categoryOptions]);
+
+  const serviceSuggestions = serviceSuggestionsInCategory.length > 0 ? serviceSuggestionsInCategory : serviceSuggestionsGlobal;
+  const serviceQueryHasText = serviceQuery.trim().length > 0;
+  const foundOnlyOutsideCategory =
+    Boolean(activeCategory) && serviceQueryHasText && serviceSuggestionsInCategory.length === 0 && serviceSuggestionsGlobal.length > 0;
+  const noServiceMatches = serviceQuery.trim().length >= 2 && serviceSuggestionsGlobal.length === 0;
 
   useEffect(() => {
     setCatalogQuery(new URLSearchParams(searchParamsString).get("q") ?? "");
@@ -98,7 +160,20 @@ export function StoFilters({
       }
     });
     const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
+    const href = query ? `${pathname}?${query}` : pathname;
+    startTransition(() => {
+      router.replace(href, { scroll: false });
+      router.refresh();
+    });
+  };
+
+  const resetAll = () => {
+    startTransition(() => {
+      router.replace(pathname, { scroll: false });
+      router.refresh();
+    });
+    setServiceQuery("");
+    setCatalogQuery("");
   };
 
   const toggleService = (slug: string) => {
@@ -145,26 +220,47 @@ export function StoFilters({
           <input
             value={serviceQuery}
             onChange={(e) => setServiceQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && serviceSuggestions[0]) {
+                e.preventDefault();
+                toggleService(serviceSuggestions[0].slug);
+              }
+            }}
             placeholder="Напр. полірування, діагностика, шиномонтаж"
             className="h-11 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-900 outline-none focus:border-neutral-500"
           />
+          {foundOnlyOutsideCategory && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              У вибраній категорії збігів немає. Показуємо результати з інших категорій.
+            </div>
+          )}
+          {noServiceMatches && (
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
+              Нічого не знайдено. Спробуйте іншу назву або ключове слово (наприклад: діагностика, шиномонтаж, полірування).
+            </div>
+          )}
           {serviceSuggestions.length > 0 && (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-2xl border border-neutral-300 bg-neutral-50/80 p-2">
+              <div className="mb-2 px-2 text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
+                Підказки послуг
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
               {serviceSuggestions.map((service) => (
                 <button
                   key={service.slug}
                   type="button"
                   onClick={() => toggleService(service.slug)}
-                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-sm font-medium text-neutral-800 hover:border-neutral-300"
+                  className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-left text-sm font-medium text-neutral-900 shadow-sm transition hover:-translate-y-0.5 hover:border-neutral-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-neutral-900/15"
                 >
-                  <div>{service.name_ua}</div>
+                  <div className="font-semibold">{highlightMatch(service.name_ua, serviceQuery)}</div>
                   {service.categoryId && (
-                    <div className="text-xs text-neutral-500">
+                    <div className="text-xs font-medium text-neutral-600">
                       {categoryOptions.find((c) => c.id === service.categoryId)?.label}
                     </div>
                   )}
                 </button>
               ))}
+            </div>
             </div>
           )}
           <div className="flex flex-wrap gap-2">
@@ -264,11 +360,17 @@ export function StoFilters({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Каталог</p>
           <h3 className="text-lg font-bold text-neutral-900">Фільтри</h3>
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)} className="md:hidden">
-          <SlidersHorizontal className="h-4 w-4" />
-          Налаштувати
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={resetAll} className="hidden md:inline-flex">
+            Скинути
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setOpen((v) => !v)} className="md:hidden">
+            <SlidersHorizontal className="h-4 w-4" />
+            Налаштувати
+          </Button>
+        </div>
       </div>
+      {isPending && <div className="text-xs font-semibold text-neutral-500">Оновлюємо результати...</div>}
       <div className="hidden md:block">{panel}</div>
       {open && <div className="md:hidden">{panel}</div>}
       <div className="flex flex-wrap gap-2 text-xs text-neutral-600">

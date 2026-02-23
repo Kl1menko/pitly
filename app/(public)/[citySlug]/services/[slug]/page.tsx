@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 
 import { PartnerCard } from "@/components/cards/partner-card";
 import { StoFilters } from "@/components/filters/partner-filters";
+import { ResultsPagination } from "@/components/shared/results-pagination";
 import { Card } from "@/components/ui/card";
 import { getBrands, getCityBySlug, getPartnersByCity, getServices } from "@/lib/supabase/queries";
 import { getServiceCategoryBySlug } from "@/lib/services/catalog";
@@ -38,6 +39,9 @@ export async function generateMetadata({ params }: { params: { citySlug: string;
 }
 
 export default async function CityServiceListPage({ params, searchParams }: Props) {
+  const pageParam = typeof searchParams.page === "string" ? Number(searchParams.page) : 1;
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? Math.floor(pageParam) : 1;
+  const perPage = 20;
   const categoryFromQuery = typeof searchParams.category === "string" ? searchParams.category : params.slug;
   if (categoryFromQuery && categoryFromQuery !== params.slug) {
     const nextParams = new URLSearchParams();
@@ -59,17 +63,10 @@ export default async function CityServiceListPage({ params, searchParams }: Prop
   const explicitServices = parseSearchServices(searchParams);
   const routeCategoryMeta = routeService?.categoryId ? serviceCategories.find((c) => c.id === routeService.categoryId) : serviceCategories.find((c) => c.slug === params.slug);
   const queryCategoryMeta = serviceCategories.find((c) => c.slug === categoryFromQuery);
-  const categoryServices =
-    !explicitServices?.length && queryCategoryMeta ? services.filter((s) => s.categoryId === queryCategoryMeta.id).map((s) => s.slug) : undefined;
   const routeServiceSlug = routeService ? routeService.slug : undefined;
-  const fallbackServices = routeServiceSlug
-    ? [routeServiceSlug]
-    : categoryServices && categoryServices.length > 0
-      ? categoryServices
-      : category && category.serviceSlugs.length > 0
-        ? category.serviceSlugs
-        : undefined;
+  const fallbackServices = routeServiceSlug ? [routeServiceSlug] : undefined;
   const selectedServices = explicitServices && explicitServices.length > 0 ? explicitServices : fallbackServices;
+  const selectedCategoryId = queryCategoryMeta?.id ?? routeCategoryMeta?.id;
   const primaryService = selectedServices?.[0] ? services.find((s) => s.slug === selectedServices[0]) : undefined;
 
   const partners = await getPartnersByCity({
@@ -78,6 +75,7 @@ export default async function CityServiceListPage({ params, searchParams }: Prop
     filters: {
       q: typeof searchParams.q === "string" ? searchParams.q : undefined,
       services: selectedServices,
+      category: !explicitServices?.length ? selectedCategoryId : undefined,
       brand: typeof searchParams.brand === "string" ? searchParams.brand : undefined,
       verified: searchParams.verified === "1",
       partsSalesEnabled: searchParams.parts === "1",
@@ -88,6 +86,9 @@ export default async function CityServiceListPage({ params, searchParams }: Prop
       sort: searchParams.sort === "rating" ? "rating" : undefined
     }
   });
+  const totalPages = Math.max(1, Math.ceil(partners.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const paginatedPartners = partners.slice((safePage - 1) * perPage, safePage * perPage);
 
   const pageTitle = routeService ? `${routeService.name_ua} у ${city.name_ua}` : `${category?.title ?? "Послуги"} у ${city.name_ua}`;
   const pageDescription = routeService
@@ -155,24 +156,33 @@ export default async function CityServiceListPage({ params, searchParams }: Prop
         <p className="text-neutral-600">{pageDescription}</p>
       </div>
 
-      <Card className="bg-blue-50/70 ring-1 ring-blue-100">
-        <p className="text-sm text-blue-900">
-          Обрана категорія: <span className="font-semibold">{routeCategoryMeta?.name ?? category?.title ?? "Послуги"}</span>
-          {selectedServices?.length ? ` • застосовано ${selectedServices.length} сервісних фільтрів` : ""}
-        </p>
-      </Card>
-
       <Suspense fallback={<div className="text-neutral-600">Завантаження фільтрів...</div>}>
         <StoFilters services={services} brands={brands} defaultCategorySlug={params.slug} />
       </Suspense>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <Card className="bg-white/90 ring-1 ring-neutral-200">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <p className="font-semibold text-neutral-900">Знайдено {partners.length} сервісів</p>
+          <p className="text-neutral-600">
+            {partners.length > 0
+              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partners.length)} з ${partners.length} • сторінка ${safePage} з ${totalPages}`
+              : `Сторінка ${safePage} з ${totalPages}`}
+          </p>
+        </div>
+      </Card>
+
+      <div className="grid min-h-[240px] content-start gap-4 md:grid-cols-2">
         {partners.length === 0 && (
-          <Card>
-            Немає партнерів за цією послугою у місті {city.name_ua}. Спробуйте змінити фільтри або залиште заявку на ремонт.
+          <Card className="md:col-span-2 flex min-h-[220px] items-center justify-center border-dashed text-center bg-neutral-50/80">
+            <div className="max-w-xl space-y-2">
+              <p className="text-lg font-semibold text-neutral-900">За цією послугою поки немає результатів</p>
+              <p className="text-sm text-neutral-700">
+                У місті {city.name_ua} не знайдено партнерів за поточною комбінацією фільтрів. Спробуйте змінити параметри.
+              </p>
+            </div>
           </Card>
         )}
-        {partners.map((partner) => (
+        {paginatedPartners.map((partner) => (
           <PartnerCard
             key={partner.id}
             partner={partner}
@@ -180,6 +190,8 @@ export default async function CityServiceListPage({ params, searchParams }: Prop
           />
         ))}
       </div>
+
+      <ResultsPagination pathname={`/${params.citySlug}/services/${params.slug}`} searchParams={searchParams} page={safePage} totalPages={totalPages} />
 
       <Card className="space-y-2 bg-white/90 ring-1 ring-neutral-200">
         <h3 className="text-lg font-bold text-neutral-900">FAQ: {pageTitle}</h3>
