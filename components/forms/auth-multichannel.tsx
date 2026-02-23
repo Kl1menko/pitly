@@ -9,10 +9,81 @@ import { cn } from "@/lib/utils";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { writeSupabaseSessionCookies } from "@/lib/supabase/auth-cookies";
 import { submitPendingRequestIfAny } from "@/lib/requests/pending-client";
-import { Mail, Send as SendIcon, Chrome } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { HiOutlineEnvelope } from "react-icons/hi2";
+import { SiTelegram } from "react-icons/si";
 
 type Mode = "login" | "register";
 type Channel = "email" | "telegram" | "google";
+type NoticeTone = "info" | "success" | "error";
+type Notice = {
+  tone: NoticeTone;
+  title: string;
+  text: string;
+};
+
+function noticeStyles(tone: NoticeTone) {
+  if (tone === "success") {
+    return {
+      wrap: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      icon: "text-emerald-600",
+      title: "text-emerald-900",
+      text: "text-emerald-800"
+    };
+  }
+  if (tone === "error") {
+    return {
+      wrap: "border-rose-200 bg-rose-50 text-rose-900",
+      icon: "text-rose-600",
+      title: "text-rose-900",
+      text: "text-rose-800"
+    };
+  }
+  return {
+    wrap: "border-blue-200 bg-blue-50 text-blue-900",
+    icon: "text-blue-600",
+    title: "text-blue-900",
+    text: "text-blue-800"
+  };
+}
+
+function mapAuthErrorToNotice(message: string, mode: Mode): Notice {
+  const lower = message.toLowerCase();
+  if (lower.includes("email rate limit exceeded")) {
+    return {
+      tone: "error",
+      title: "Забагато листів за короткий час",
+      text: "Сервіс тимчасово обмежив відправку email. Зачекайте трохи та спробуйте ще раз, або увійдіть через Google."
+    };
+  }
+  if (lower.includes("invalid api key")) {
+    return {
+      tone: "error",
+      title: "Помилка налаштування авторизації",
+      text: "Сервіс авторизації налаштований некоректно. Спробуйте пізніше або напишіть у підтримку."
+    };
+  }
+  if (lower.includes("invalid login credentials")) {
+    return {
+      tone: "error",
+      title: "Невірний email або пароль",
+      text: "Перевірте введені дані та спробуйте ще раз. Якщо не пам’ятаєте пароль, використайте відновлення."
+    };
+  }
+  if (lower.includes("email not confirmed")) {
+    return {
+      tone: "info",
+      title: "Підтвердіть email",
+      text: "Ми знайшли акаунт, але пошту ще не підтверджено. Відкрийте лист підтвердження і після цього увійдіть."
+    };
+  }
+  return {
+    tone: "error",
+    title: mode === "register" ? "Не вдалося завершити реєстрацію" : "Не вдалося увійти",
+    text: message
+  };
+}
 
 export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?: "client" | "partner_sto" | "partner_shop" }) {
   const router = useRouter();
@@ -25,11 +96,13 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
   const [telegramAuthToken, setTelegramAuthToken] = useState<string | null>(null);
   const [telegramBotUrl, setTelegramBotUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+
+  const setErrorNotice = (message: string) => setNotice(mapAuthErrorToNotice(message, mode));
 
   const handleEmail = async () => {
     setLoading(true);
-    setMessage(null);
+    setNotice(null);
     const fn =
       mode === "register"
         ? supabase.auth.signUp({
@@ -41,7 +114,7 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
     const { data, error } = await fn;
     setLoading(false);
     if (error) {
-      setMessage(error.message);
+      setErrorNotice(error.message);
       return;
     }
     if (data.session) {
@@ -51,17 +124,25 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
         router.replace(pending.submitted ? "/thank-you" : "/dashboard");
       } catch (submitError) {
         console.error("pending request submit after email auth error", submitError);
-        setMessage("Увійшли, але відкладену заявку не вдалось надіслати. Спробуйте ще раз у формі.");
+        setNotice({
+          tone: "info",
+          title: "Вхід виконано",
+          text: "Увійшли успішно, але відкладену заявку не вдалося надіслати автоматично. Ви зможете повторити це у формі."
+        });
         router.replace("/dashboard");
       }
       return;
     }
-    setMessage("Успішно. Перевірте email для підтвердження (якщо увімкнено) і потім увійдіть.");
+    setNotice({
+      tone: "success",
+      title: "Акаунт створено",
+      text: "Перевірте пошту та підтвердіть email (якщо підтвердження увімкнено). Після цього поверніться і увійдіть у кабінет."
+    });
   };
 
   const sendOtp = async () => {
     setLoading(true);
-    setMessage(null);
+    setNotice(null);
     const res = await fetch("/api/auth/telegram/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -70,18 +151,26 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
     const payload = await res.json().catch(() => ({}));
     setLoading(false);
     if (!res.ok) {
-      setMessage(payload?.error === "telegram_bot_not_configured" ? "Telegram-вхід поки не налаштовано." : "Не вдалося запустити Telegram-вхід.");
+      setNotice({
+        tone: "error",
+        title: "Telegram-вхід недоступний",
+        text: payload?.error === "telegram_bot_not_configured" ? "Telegram-вхід поки не налаштовано." : "Не вдалося запустити Telegram-вхід. Спробуйте ще раз трохи пізніше."
+      });
       return;
     }
     setTelegramAuthToken(payload?.token ?? null);
     setTelegramBotUrl(payload?.botUrl ?? null);
     setSent(true);
-    setMessage("Відкрийте бота в Telegram, натисніть Start і введіть код із повідомлення.");
+    setNotice({
+      tone: "info",
+      title: "Telegram-вхід запущено",
+      text: "Відкрийте бота, натисніть Start і введіть код із повідомлення в полі нижче."
+    });
   };
 
   const verifyOtp = async () => {
     setLoading(true);
-    setMessage(null);
+    setNotice(null);
     const res = await fetch("/api/auth/telegram/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -100,10 +189,18 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
         code_expired: "Код протермінований. Запустіть Telegram-вхід ще раз.",
         telegram_user_missing: "Не знайдено підтвердження від Telegram. Спробуйте ще раз."
       };
-      setMessage(map[payload?.error] ?? "Не вдалося підтвердити Telegram-вхід.");
+      setNotice({
+        tone: "error",
+        title: "Не вдалося підтвердити Telegram-вхід",
+        text: map[payload?.error] ?? "Спробуйте ще раз або оберіть інший спосіб входу."
+      });
       return;
     }
-    setMessage(payload?.isNewUser ? "Акаунт створено. Входимо..." : "Підтверджено. Входимо...");
+    setNotice({
+      tone: "success",
+      title: payload?.isNewUser ? "Акаунт створено" : "Підтверджено",
+      text: "Входимо в кабінет..."
+    });
     if (payload?.redirectUrl) {
       window.location.href = payload.redirectUrl as string;
     }
@@ -111,13 +208,17 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
 
   const signInGoogle = async () => {
     setLoading(true);
-    setMessage(null);
+    setNotice({
+      tone: "info",
+      title: "Переходимо до Google",
+      text: "Виберіть акаунт Google. Після авторизації ви повернетеся на Pitly."
+    });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined }
     });
     setLoading(false);
-    if (error) setMessage(error.message);
+    if (error) setErrorNotice(error.message);
   };
 
   return (
@@ -126,10 +227,10 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
         {(["email", "telegram", "google"] as Channel[]).map((ch) => {
           const active = channel === ch;
           const icon =
-            ch === "email" ? <Mail className="h-4 w-4" /> : ch === "telegram" ? (
-              <SendIcon className="h-4 w-4" />
+            ch === "email" ? <HiOutlineEnvelope className={cn("h-4 w-4", active ? "text-neutral-900" : "text-neutral-700")} /> : ch === "telegram" ? (
+              <SiTelegram className={cn("h-4 w-4", active ? "text-sky-500" : "text-sky-600")} />
             ) : (
-              <Chrome className="h-4 w-4" />
+              <FcGoogle className="h-4 w-4" />
             );
           const label = ch === "email" ? "Email" : ch === "telegram" ? "Telegram" : "Google";
           const hint =
@@ -152,7 +253,7 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
               <div className="flex min-w-0 items-center gap-3">
                 <span
                   className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-900",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-neutral-900",
                     active ? "bg-white text-neutral-900" : "bg-neutral-100"
                   )}
                 >
@@ -170,6 +271,11 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
 
       {channel === "email" && (
         <div className="space-y-3">
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-700">
+            {mode === "register"
+              ? "Створіть акаунт за email і паролем. Якщо увімкнено підтвердження пошти, ми надішлемо лист з посиланням."
+              : "Введіть email і пароль, які використовували під час реєстрації."}
+          </div>
           <div>
             <Label>Email</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
@@ -185,20 +291,22 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
       )}
 
       {channel === "telegram" && (
-        <div className="space-y-3">
+        <div className="space-y-3 text-center">
           {!sent && <p className="text-sm text-neutral-700">Запустіть Telegram-вхід, відкрийте бота і підтвердіть вхід через код.</p>}
           {telegramBotUrl && (
-            <a
-              href={telegramBotUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-100"
-            >
-              Відкрити бота в Telegram
-            </a>
+            <div className="flex justify-center">
+              <a
+                href={telegramBotUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-neutral-50 px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-100"
+              >
+                Відкрити бота в Telegram
+              </a>
+            </div>
           )}
           {sent && (
-            <div>
+            <div className="text-left">
               <Label>Код із Telegram</Label>
               <Input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="6 цифр" />
             </div>
@@ -206,7 +314,7 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
           <p className="text-xs text-neutral-600">
             Якщо ви вперше заходите через Telegram, ми автоматично створимо акаунт після підтвердження. Якщо вже були — просто підтвердимо вхід і впустимо в кабінет.
           </p>
-          <div className="flex gap-2">
+          <div className="flex justify-center gap-2">
             {!sent ? (
               <Button onClick={sendOtp} disabled={loading}>
                 Почати через Telegram
@@ -221,17 +329,35 @@ export function AuthMultichannel({ mode, role = "client" }: { mode: Mode; role?:
       )}
 
       {channel === "google" && (
-        <div className="space-y-3">
+        <div className="space-y-3 text-center">
           <p className="text-sm text-neutral-700">
             {mode === "register" ? "Реєстрація" : "Вхід"} через Google. Після авторизації повернетеся у кабінет.
           </p>
-          <Button onClick={signInGoogle} disabled={loading}>
-            {mode === "register" ? "Продовжити з Google" : "Увійти з Google"}
-          </Button>
+          <div className="flex justify-center">
+            <Button onClick={signInGoogle} disabled={loading}>
+              {mode === "register" ? "Продовжити з Google" : "Увійти з Google"}
+            </Button>
+          </div>
         </div>
       )}
 
-      {message && <p className="text-sm text-neutral-600">{message}</p>}
+      {notice && (
+        <div className={cn("rounded-xl border px-3 py-3", noticeStyles(notice.tone).wrap)}>
+          <div className="flex items-start gap-2">
+            {notice.tone === "success" ? (
+              <CheckCircle2 className={cn("mt-0.5 h-4 w-4 shrink-0", noticeStyles(notice.tone).icon)} />
+            ) : notice.tone === "error" ? (
+              <AlertCircle className={cn("mt-0.5 h-4 w-4 shrink-0", noticeStyles(notice.tone).icon)} />
+            ) : (
+              <Info className={cn("mt-0.5 h-4 w-4 shrink-0", noticeStyles(notice.tone).icon)} />
+            )}
+            <div className="space-y-1">
+              <p className={cn("text-sm font-semibold", noticeStyles(notice.tone).title)}>{notice.title}</p>
+              <p className={cn("text-sm leading-relaxed", noticeStyles(notice.tone).text)}>{notice.text}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
