@@ -13,13 +13,26 @@ function randomToken() {
   return crypto.randomBytes(18).toString("base64url");
 }
 
+function normalizeBotUsername(raw?: string | null) {
+  const value = String(raw ?? "").trim();
+  if (!value) return "";
+
+  // Accept values like "@my_bot", "https://t.me/my_bot", "t.me/my_bot", or plain "my_bot"
+  const withoutProtocol = value.replace(/^https?:\/\//i, "");
+  const withoutDomain = withoutProtocol.replace(/^t\.me\//i, "");
+  const withoutAt = withoutDomain.replace(/^@/, "");
+  const username = withoutAt.split(/[/?#]/)[0]?.trim() ?? "";
+
+  return /^[A-Za-z0-9_]{4,}$/.test(username) ? username : "";
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const mode = body?.mode === "register" ? "register" : "login";
     const role = ["client", "partner_sto", "partner_shop"].includes(body?.role) ? body.role : "client";
 
-    const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+    const botUsername = normalizeBotUsername(process.env.TELEGRAM_BOT_USERNAME);
     if (!botUsername) {
       return NextResponse.json({ error: "telegram_bot_not_configured" }, { status: 500 });
     }
@@ -53,4 +66,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad_request" }, { status: 400 });
   }
 }
-
