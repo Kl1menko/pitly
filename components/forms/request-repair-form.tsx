@@ -128,13 +128,14 @@ export function RequestRepairForm({
       if (values.contact_telegram) {
         await fetch("/api/request-link", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requestId: data?.id,
-            telegram: values.contact_telegram
-          })
-        }).catch(() => null);
-      }
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                requestId: data?.id,
+                telegram: values.contact_telegram,
+                requestProof: data?.requestProof
+              })
+            }).catch(() => null);
+          }
 
       const citySlug = cities.find((c) => c.id === values.city_id)?.slug;
       const primaryServiceId = values.services_multi?.[0];

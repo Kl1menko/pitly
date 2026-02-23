@@ -64,7 +64,7 @@ export function ReviewSubmitForm({ partnerId }: Props) {
           rating,
           comment: comment.trim() || null
         };
-        const { error: insertError } = await supabase.from("reviews").insert(payload);
+        const { error: insertError } = await supabase.from("reviews").insert(payload as never);
         if (insertError) {
           setError(insertError.message.includes("duplicate") ? "Відгук уже додано." : "Не вдалося надіслати відгук.");
           return;

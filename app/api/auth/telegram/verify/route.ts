@@ -12,10 +12,11 @@ export async function POST(req: Request) {
     const token = String(body?.token ?? "").trim();
     const code = String(body?.code ?? "").trim();
     const role = ["client", "partner_sto", "partner_shop"].includes(body?.role) ? body.role : "client";
-    const origin =
-      req.headers.get("origin") ||
+    const origin = (
       process.env.SITE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+      req.headers.get("origin") ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+    ).replace(/\/$/, "");
 
     if (!token || !code) {
       return NextResponse.json({ error: "token_and_code_required" }, { status: 400 });

@@ -6,7 +6,7 @@ import { PartnerCard } from "@/components/cards/partner-card";
 import { ShopFilters } from "@/components/filters/shop-filters";
 import { ResultsPagination } from "@/components/shared/results-pagination";
 import { Card } from "@/components/ui/card";
-import { getBrands, getCityBySlug, getPartCategories, getPartnersByCity } from "@/lib/supabase/queries";
+import { getBrands, getCityBySlug, getPartCategories, getPartnersByCityPage } from "@/lib/supabase/queries";
 
 type Props = {
   params: { citySlug: string };
@@ -39,9 +39,11 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
   const brands = await getBrands();
   const cityName = city.name_ua;
 
-  const partners = await getPartnersByCity({
+  const partnersPage = await getPartnersByCityPage({
     type: "shop",
     cityId: city.id,
+    page,
+    perPage,
     filters: {
       categories: typeof searchParams.categories === "string" ? searchParams.categories.split(",") : undefined,
       brand: typeof searchParams.brand === "string" ? searchParams.brand : undefined,
@@ -49,9 +51,9 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
       delivery: searchParams.delivery === "1"
     }
   });
-  const totalPages = Math.max(1, Math.ceil(partners.length / perPage));
-  const safePage = Math.min(page, totalPages);
-  const paginatedPartners = partners.slice((safePage - 1) * perPage, safePage * perPage);
+  const totalPages = Math.max(1, Math.ceil(partnersPage.total / perPage));
+  const safePage = partnersPage.page;
+  const paginatedPartners = partnersPage.items;
 
   const faq = [
     {
@@ -96,17 +98,17 @@ export default async function ShopsCityPage({ params, searchParams }: Props) {
 
       <Card className="bg-white/90 ring-1 ring-neutral-200">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <p className="font-semibold text-neutral-900">Знайдено {partners.length} магазинів</p>
+          <p className="font-semibold text-neutral-900">Знайдено {partnersPage.total} магазинів</p>
           <p className="text-neutral-600">
-            {partners.length > 0
-              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partners.length)} з ${partners.length} • сторінка ${safePage} з ${totalPages}`
+            {partnersPage.total > 0
+              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partnersPage.total)} з ${partnersPage.total} • сторінка ${safePage} з ${totalPages}`
               : `Сторінка ${safePage} з ${totalPages}`}
           </p>
         </div>
       </Card>
 
       <div className="grid min-h-[240px] content-start gap-4 md:grid-cols-2">
-        {partners.length === 0 && (
+        {partnersPage.total === 0 && (
           <Card className="md:col-span-2 flex min-h-[220px] items-center justify-center border-dashed text-center bg-neutral-50/80">
             <div className="max-w-xl space-y-2">
               <p className="text-lg font-semibold text-neutral-900">Немає магазинів за цими фільтрами</p>

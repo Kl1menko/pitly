@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { writeSupabaseSessionCookies } from "@/lib/supabase/auth-cookies";
 import { submitPendingRequestIfAny } from "@/lib/requests/pending-client";
 
 export default function AuthCallbackPage() {
-  const supabase = getSupabaseBrowserClient();
+  const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [message, setMessage] = useState("Зачекайте, входимо...");
 
   useEffect(() => {

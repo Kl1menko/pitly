@@ -1,15 +1,45 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
 import { getSupabaseServiceRoleClient } from "@/lib/supabase/admin";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export async function POST(req: Request) {
+function decodeCookieValue(value?: string) {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function extractAccessToken(req: NextRequest) {
+  const direct = decodeCookieValue(req.cookies.get("sb-access-token")?.value);
+  if (direct) return direct;
+  const legacy = decodeCookieValue(req.cookies.get("sb:token")?.value);
+  if (!legacy) return "";
+  try {
+    const parsed = JSON.parse(legacy);
+    if (typeof parsed?.access_token === "string") return parsed.access_token;
+  } catch {
+    return legacy;
+  }
+  return "";
+}
+
+function makeRequestProof(requestId: string, contactPhone: string) {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!secret) return null;
+  return crypto.createHmac("sha256", secret).update(`${requestId}:${contactPhone.trim()}`).digest("hex");
+}
+
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const requestId = body?.requestId as string | undefined;
     const telegram = (body?.telegram as string | undefined)?.trim();
+    const requestProof = (body?.requestProof as string | undefined)?.trim();
 
     if (!requestId || !telegram) {
       return NextResponse.json({ error: "requestId and telegram required" }, { status: 400 });
@@ -19,6 +49,35 @@ export async function POST(req: Request) {
     const expiresAt = new Date(Date.now() + ONE_WEEK_MS).toISOString();
 
     const supabase = getSupabaseServiceRoleClient();
+    const accessToken = extractAccessToken(req);
+    let authUserId: string | null = null;
+    if (accessToken) {
+      const { data } = await supabase.auth.getUser(accessToken);
+      authUserId = data.user?.id ?? null;
+    }
+
+    const { data: requestRow, error: requestFetchError } = await supabase
+      .from("requests")
+      .select("id, client_profile_id, contact_phone")
+      .eq("id", requestId)
+      .maybeSingle();
+
+    if (requestFetchError || !requestRow) {
+      return NextResponse.json({ error: "request_not_found" }, { status: 404 });
+    }
+
+    const ownerAuthorized = Boolean(authUserId && requestRow.client_profile_id && requestRow.client_profile_id === authUserId);
+    const proofAuthorized = Boolean(
+      requestProof &&
+        requestRow.contact_phone &&
+        makeRequestProof(requestId, requestRow.contact_phone) &&
+        requestProof === makeRequestProof(requestId, requestRow.contact_phone)
+    );
+
+    if (!ownerAuthorized && !proofAuthorized) {
+      return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
     const { error } = await supabase.from("request_links").insert({
       request_id: requestId,
       token,
@@ -41,7 +100,7 @@ export async function POST(req: Request) {
 
     if (botToken) {
       try {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -51,6 +110,10 @@ export async function POST(req: Request) {
             disable_web_page_preview: true
           })
         });
+        if (!tgRes.ok) {
+          const tgBody = await tgRes.text().catch(() => "");
+          console.error("telegram send non-ok", tgRes.status, tgBody);
+        }
       } catch (e) {
         console.error("telegram send error", e);
       }

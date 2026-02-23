@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { demoServices } from "@/lib/data/demo";
 import { getSupabaseServerClient, supabaseReady } from "@/lib/supabase/server";
-import { getPartnerBySlug, getPartnersByCity } from "@/lib/supabase/queries";
+import { getPartnerBySlug, getRelatedPartnersByCity } from "@/lib/supabase/queries";
 import { type Partner } from "@/lib/types";
 
 type Props = {
@@ -344,7 +344,7 @@ export default async function StoDetailPage({ params }: Props) {
   }
 
   const others = partner.city_id
-    ? await getPartnersByCity({ type: "sto", cityId: partner.city_id, filters: { sort: "rating" } })
+    ? await getRelatedPartnersByCity({ cityId: partner.city_id, type: "sto", excludePartnerId: partner.id, limit: 4 })
     : [];
 
   const importedFromGoogle = Boolean(partnerExt.google_place_id);
@@ -605,14 +605,11 @@ export default async function StoDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {others.length > 1 && (
+      {others.length > 0 && (
         <section className="space-y-3">
           <h3 className="text-xl font-bold text-neutral-900">Схожі СТО в цьому місті</h3>
           <div className="grid gap-4 md:grid-cols-2">
-            {others
-              .filter((p) => p.slug !== partner.slug)
-              .slice(0, 4)
-              .map((p) => (
+            {others.map((p) => (
                 <PartnerCard key={p.id} partner={p} />
               ))}
           </div>

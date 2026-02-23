@@ -99,6 +99,306 @@ type PartnerFilters = {
   sort?: "rating" | "new";
 };
 
+export type PaginatedPartnersResult = {
+  items: Partner[];
+  total: number;
+  page: number;
+  perPage: number;
+};
+
+function paginateLocal(list: Partner[], page: number, perPage: number): PaginatedPartnersResult {
+  const safePerPage = Math.max(1, perPage);
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / safePerPage));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  return {
+    items: list.slice((safePage - 1) * safePerPage, safePage * safePerPage),
+    total,
+    page: safePage,
+    perPage: safePerPage
+  };
+}
+
+function hasHeavyLocalOnlyFilters(filters?: PartnerFilters) {
+  if (!filters) return false;
+  return Boolean(filters.sort === "rating");
+}
+
+export async function getPartnersByCityPage(params: {
+  type: PartnerType;
+  cityId?: string;
+  citySlug?: string;
+  page?: number;
+  perPage?: number;
+  filters?: PartnerFilters;
+}): Promise<PaginatedPartnersResult> {
+  const page = Math.max(1, Math.floor(params.page ?? 1));
+  const perPage = Math.max(1, Math.floor(params.perPage ?? 20));
+
+  if (!supabaseReady || hasHeavyLocalOnlyFilters(params.filters)) {
+    const all = await getPartnersByCity({
+      type: params.type,
+      cityId: params.cityId,
+      citySlug: params.citySlug,
+      filters: params.filters
+    });
+    return paginateLocal(all, page, perPage);
+  }
+
+  const supabase = getSupabaseServerClient();
+  const city = params.cityId
+    ? { id: params.cityId }
+    : params.citySlug
+      ? await getCityBySlug(params.citySlug)
+      : null;
+  if (!city) {
+    const all = await getPartnersByCity({
+      type: params.type,
+      cityId: params.cityId,
+      citySlug: params.citySlug,
+      filters: params.filters
+    });
+    return paginateLocal(all, page, perPage);
+  }
+
+  const filters = params.filters;
+  const needsBrandJoinFilter = Boolean(filters?.brand);
+  const needsShopJoinFilter = params.type === "shop" && Boolean(filters?.delivery || filters?.categories?.length);
+  const needsStoJoinFilter = params.type === "sto" && Boolean(filters?.services?.length || filters?.category);
+  const selectClause = `*, partner_services!${needsStoJoinFilter ? "inner" : "left"}(service_id), shop_part_offers!${
+    needsShopJoinFilter ? "inner" : "left"
+  }(category_id, delivery_available), partner_car_compatibility!${needsBrandJoinFilter ? "inner" : "left"}(brand_id)`;
+
+  let query = supabase
+    .from("partners")
+    .select(selectClause, { count: "exact" })
+    .eq("type", params.type)
+    .eq("city_id", city.id)
+    .eq("status", "active");
+
+  if (filters?.verified) query = query.eq("verified", true);
+  if (filters?.onlineBooking && params.type === "sto") query = query.eq("online_booking_enabled", true);
+  if (filters?.hasTowService && params.type === "sto") query = query.eq("has_tow_service", true);
+  if (filters?.mobileService && params.type === "sto") query = query.eq("mobile_service", true);
+  if (filters?.evacOrMobile && params.type === "sto") query = query.or("has_tow_service.eq.true,mobile_service.eq.true");
+  if (filters?.partsSalesEnabled && params.type === "sto") query = query.eq("parts_sales_enabled", true);
+
+  if (filters?.brand) {
+    query = query.eq("partner_car_compatibility.brand_id", filters.brand);
+  }
+
+  if (params.type === "shop") {
+    if (filters?.delivery) query = query.eq("shop_part_offers.delivery_available", true);
+    if (filters?.categories?.length) query = query.in("shop_part_offers.category_id", filters.categories);
+  }
+
+  let servicesCatalogForSto: Service[] | null = null;
+  if (params.type === "sto") {
+    const servicesCatalog = await getServices();
+    servicesCatalogForSto = servicesCatalog;
+    const idsByCategory = new Map<string, string[]>();
+    const idsBySlug = new Map<string, string>();
+    for (const svc of servicesCatalog) {
+      idsBySlug.set(svc.slug, svc.id);
+      if (svc.categoryId) {
+        const arr = idsByCategory.get(svc.categoryId) ?? [];
+        arr.push(svc.id);
+        idsByCategory.set(svc.categoryId, arr);
+      }
+    }
+
+    const selectedService = filters?.services?.[0];
+    if (selectedService) {
+      const serviceId = idsBySlug.get(selectedService) ?? selectedService;
+      query = query.eq("partner_services.service_id", serviceId);
+    } else if (filters?.category) {
+      const categoryServiceIds = idsByCategory.get(filters.category) ?? [];
+      if (categoryServiceIds.length === 0) {
+        return { items: [], total: 0, page: 1, perPage };
+      }
+      query = query.in("partner_services.service_id", categoryServiceIds);
+    }
+  }
+
+  if (filters?.q) {
+    const q = filters.q.trim();
+    if (q) {
+      query = query.textSearch("search_tsv", q, {
+        config: "simple",
+        type: "websearch"
+      });
+    }
+  }
+
+  if (params.type === "sto" && (filters?.openToday || filters?.openNow)) {
+    const dayKey = getWeekdayKey();
+    const openPath = `work_hours->${dayKey}->>open`;
+    const closePath = `work_hours->${dayKey}->>close`;
+    query = query.not(openPath, "is", null).not(closePath, "is", null);
+    if (filters.openNow) {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      const nowText = `${hh}:${mm}`;
+      query = query.lte(openPath, nowText).gte(closePath, nowText);
+    }
+  }
+
+  if (filters?.sort === "new") {
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query.order("rating_avg", { ascending: false, nullsFirst: false }).order("rating_count", { ascending: false });
+  }
+
+  const from = (page - 1) * perPage;
+  const to = from + perPage - 1;
+  const { data, error, count } = await query.range(from, to);
+
+  if (error) {
+    console.warn("Supabase getPartnersByCityPage error", error);
+    const all = await getPartnersByCity({
+      type: params.type,
+      cityId: params.cityId,
+      citySlug: params.citySlug,
+      filters: params.filters
+    });
+    return paginateLocal(all, page, perPage);
+  }
+
+  const [servicesCatalog, partCategoriesCatalog] = await Promise.all([getServices(), getPartCategories()]);
+  const serviceByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const svc of servicesCatalog) {
+    serviceByIdOrSlug.set(svc.id, { id: svc.id, name_ua: svc.name_ua });
+    serviceByIdOrSlug.set(svc.slug, { id: svc.id, name_ua: svc.name_ua });
+  }
+  const partCategoryByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const cat of partCategoriesCatalog) {
+    partCategoryByIdOrSlug.set(cat.id, { id: cat.id, name_ua: cat.name_ua });
+    partCategoryByIdOrSlug.set(cat.slug, { id: cat.id, name_ua: cat.name_ua });
+  }
+
+  type RawPartner = Partner & {
+    partner_services?: { service_id: string }[];
+    shop_part_offers?: { category_id: string; delivery_available?: boolean }[];
+    partner_car_compatibility?: { brand_id: string }[];
+    parts_sales_enabled?: boolean;
+    work_hours?: Partner["workHours"];
+    online_booking_enabled?: boolean;
+    booking_mode?: Partner["bookingMode"];
+    booking_url?: string | null;
+    has_tow_service?: boolean;
+    mobile_service?: boolean;
+  };
+
+  const items: Partner[] = (((data as unknown) as RawPartner[] | null) ?? []).map((p) => ({
+    ...p,
+    services: p.partner_services?.map((s) => serviceByIdOrSlug.get(s.service_id) || { id: s.service_id, name_ua: s.service_id }),
+    categories: p.shop_part_offers?.map(
+      (s) => partCategoryByIdOrSlug.get(s.category_id) || { id: s.category_id, name_ua: s.category_id }
+    ),
+    brands: p.partner_car_compatibility?.map((c) => c.brand_id),
+    delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false,
+    partsSalesEnabled: p.parts_sales_enabled ?? (p.shop_part_offers?.length ?? 0) > 0,
+    workHours: p.work_hours ?? p.workHours ?? null,
+    onlineBookingEnabled: p.online_booking_enabled ?? p.onlineBookingEnabled ?? false,
+    bookingMode: p.booking_mode ?? p.bookingMode ?? "none",
+    bookingUrl: p.booking_url ?? p.bookingUrl ?? null,
+    hasTowService: p.has_tow_service ?? p.hasTowService ?? false,
+    mobileService: p.mobile_service ?? p.mobileService ?? false
+  }));
+
+  const total = Number(count ?? 0);
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  return {
+    items,
+    total,
+    page: Math.min(page, totalPages),
+    perPage
+  };
+}
+
+export async function getRelatedPartnersByCity(params: {
+  cityId: string;
+  type?: PartnerType;
+  excludePartnerId?: string;
+  limit?: number;
+}): Promise<Partner[]> {
+  const { cityId, type = "sto", excludePartnerId, limit = 4 } = params;
+
+  if (!supabaseReady) {
+    return (await getPartnersByCity({ type, cityId, filters: { sort: "rating" } }))
+      .filter((p) => p.id !== excludePartnerId)
+      .slice(0, limit);
+  }
+
+  const supabase = getSupabaseServerClient();
+  const selectClause =
+    "*, partner_services!left(service_id), shop_part_offers!left(category_id, delivery_available), partner_car_compatibility!left(brand_id)";
+  let query = supabase
+    .from("partners")
+    .select(selectClause)
+    .eq("type", type)
+    .eq("city_id", cityId)
+    .eq("status", "active")
+    .order("rating_avg", { ascending: false, nullsFirst: false })
+    .order("rating_count", { ascending: false })
+    .limit(Math.max(1, limit + (excludePartnerId ? 1 : 0)));
+
+  if (excludePartnerId) {
+    query = query.neq("id", excludePartnerId);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.warn("Supabase getRelatedPartnersByCity error", error);
+    return (await getPartnersByCity({ type, cityId, filters: { sort: "rating" } }))
+      .filter((p) => p.id !== excludePartnerId)
+      .slice(0, limit);
+  }
+
+  const [servicesCatalog, partCategoriesCatalog] = await Promise.all([getServices(), getPartCategories()]);
+  const serviceByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const svc of servicesCatalog) {
+    serviceByIdOrSlug.set(svc.id, { id: svc.id, name_ua: svc.name_ua });
+    serviceByIdOrSlug.set(svc.slug, { id: svc.id, name_ua: svc.name_ua });
+  }
+  const partCategoryByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  for (const cat of partCategoriesCatalog) {
+    partCategoryByIdOrSlug.set(cat.id, { id: cat.id, name_ua: cat.name_ua });
+    partCategoryByIdOrSlug.set(cat.slug, { id: cat.id, name_ua: cat.name_ua });
+  }
+
+  type RawPartner = Partner & {
+    partner_services?: { service_id: string }[];
+    shop_part_offers?: { category_id: string; delivery_available?: boolean }[];
+    partner_car_compatibility?: { brand_id: string }[];
+    parts_sales_enabled?: boolean;
+    work_hours?: Partner["workHours"];
+    online_booking_enabled?: boolean;
+    booking_mode?: Partner["bookingMode"];
+    booking_url?: string | null;
+    has_tow_service?: boolean;
+    mobile_service?: boolean;
+  };
+
+  return ((((data as unknown) as RawPartner[] | null) ?? []).map((p) => ({
+    ...p,
+    services: p.partner_services?.map((s) => serviceByIdOrSlug.get(s.service_id) || { id: s.service_id, name_ua: s.service_id }),
+    categories: p.shop_part_offers?.map(
+      (s) => partCategoryByIdOrSlug.get(s.category_id) || { id: s.category_id, name_ua: s.category_id }
+    ),
+    brands: p.partner_car_compatibility?.map((c) => c.brand_id),
+    delivery_available: p.shop_part_offers?.some((o) => o.delivery_available) ?? false,
+    partsSalesEnabled: p.parts_sales_enabled ?? (p.shop_part_offers?.length ?? 0) > 0,
+    workHours: p.work_hours ?? p.workHours ?? null,
+    onlineBookingEnabled: p.online_booking_enabled ?? p.onlineBookingEnabled ?? false,
+    bookingMode: p.booking_mode ?? p.bookingMode ?? "none",
+    bookingUrl: p.booking_url ?? p.bookingUrl ?? null,
+    hasTowService: p.has_tow_service ?? p.hasTowService ?? false,
+    mobileService: p.mobile_service ?? p.mobileService ?? false
+  })) as Partner[]).slice(0, limit);
+}
+
 export async function getPartnersByCity(params: {
   type: PartnerType;
   cityId?: string;
@@ -230,9 +530,12 @@ export async function getPartnersByCity(params: {
 
   const [servicesCatalog, partCategoriesCatalog] = await Promise.all([getServices(), getPartCategories()]);
   const serviceByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
+  const serviceCategoryByIdOrSlug = new Map<string, string | null>();
   for (const svc of servicesCatalog) {
     serviceByIdOrSlug.set(svc.id, { id: svc.id, name_ua: svc.name_ua });
     serviceByIdOrSlug.set(svc.slug, { id: svc.id, name_ua: svc.name_ua });
+    serviceCategoryByIdOrSlug.set(svc.id, svc.categoryId ?? null);
+    serviceCategoryByIdOrSlug.set(svc.slug, svc.categoryId ?? null);
   }
   const partCategoryByIdOrSlug = new Map<string, { id: string; name_ua: string }>();
   for (const cat of partCategoriesCatalog) {
@@ -308,8 +611,7 @@ export async function getPartnersByCity(params: {
     partners = partners.filter((p) =>
       p.services?.some((s) => {
         const key = typeof s === "string" ? s : s.id;
-        const svc = demoServices.find((item) => item.id === key || item.slug === key);
-        return svc?.categoryId === filters.category;
+        return serviceCategoryByIdOrSlug.get(key) === filters.category;
       })
     );
   }

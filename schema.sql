@@ -109,7 +109,10 @@ alter table public.partners add column if not exists has_tow_service boolean not
 alter table public.partners add column if not exists mobile_service boolean not null default false;
 alter table public.partners add column if not exists google_place_id text;
 alter table public.partners add column if not exists google_types text[] not null default '{}'::text[];
+alter table public.partners add column if not exists search_text text not null default '';
+alter table public.partners add column if not exists search_tsv tsvector;
 create unique index if not exists partners_google_place_id_uidx on public.partners(google_place_id);
+create index if not exists partners_search_tsv_gin_idx on public.partners using gin(search_tsv);
 
 create table if not exists public.service_categories (
   id uuid primary key default gen_random_uuid(),
@@ -189,6 +192,190 @@ create table if not exists public.shop_part_offers (
 );
 create index if not exists shop_part_offers_partner_category_idx on public.shop_part_offers(partner_id, category_id);
 create index if not exists shop_part_offers_brand_idx on public.shop_part_offers(brand_id);
+
+-- Denormalized partner catalog search (FTS)
+create or replace function public.partner_catalog_search_text(p_partner_id uuid)
+returns text
+language sql
+stable
+set search_path = public
+as $$
+  with p as (
+    select *
+    from public.partners
+    where id = p_partner_id
+  ),
+  city_name as (
+    select c.name_ua
+    from p
+    join public.cities c on c.id = p.city_id
+  ),
+  services_agg as (
+    select string_agg(distinct trim(concat_ws(' ', s.name_ua, array_to_string(s.keywords, ' '))), ' ') as service_text
+    from public.partner_services ps
+    join public.services s on s.id = ps.service_id
+    where ps.partner_id = p_partner_id
+  ),
+  categories_agg as (
+    select string_agg(distinct pc.name_ua, ' ') as category_text
+    from public.shop_part_offers spo
+    join public.part_categories pc on pc.id = spo.category_id
+    where spo.partner_id = p_partner_id
+  )
+  select trim(
+    regexp_replace(
+      lower(
+        concat_ws(
+          ' ',
+          p.name,
+          p.address,
+          p.district,
+          p.description,
+          array_to_string(p.google_types, ' '),
+          (select name_ua from city_name),
+          (select service_text from services_agg),
+          (select category_text from categories_agg)
+        )
+      ),
+      '\s+',
+      ' ',
+      'g'
+    )
+  )
+  from p;
+$$;
+
+create or replace function public.refresh_partner_catalog_search(p_partner_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_search_text text;
+begin
+  if p_partner_id is null then
+    return;
+  end if;
+
+  select public.partner_catalog_search_text(p_partner_id) into v_search_text;
+
+  update public.partners
+  set
+    search_text = coalesce(v_search_text, ''),
+    search_tsv = to_tsvector('simple', coalesce(v_search_text, '')),
+    updated_at = updated_at
+  where id = p_partner_id;
+end;
+$$;
+
+create or replace function public.trg_refresh_partner_catalog_search_from_partner()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if pg_trigger_depth() > 1 then
+    return coalesce(new, old);
+  end if;
+  perform public.refresh_partner_catalog_search(coalesce(new.id, old.id));
+  return coalesce(new, old);
+end;
+$$;
+
+create or replace function public.trg_refresh_partner_catalog_search_from_linked_rows()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if pg_trigger_depth() > 1 then
+    return coalesce(new, old);
+  end if;
+  perform public.refresh_partner_catalog_search(coalesce(new.partner_id, old.partner_id));
+  return coalesce(new, old);
+end;
+$$;
+
+create or replace function public.trg_refresh_partner_catalog_search_from_service()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_partner_id uuid;
+begin
+  if pg_trigger_depth() > 1 then
+    return coalesce(new, old);
+  end if;
+  for v_partner_id in
+    select distinct ps.partner_id
+    from public.partner_services ps
+    where ps.service_id = coalesce(new.id, old.id)
+  loop
+    perform public.refresh_partner_catalog_search(v_partner_id);
+  end loop;
+  return coalesce(new, old);
+end;
+$$;
+
+create or replace function public.trg_refresh_partner_catalog_search_from_part_category()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_partner_id uuid;
+begin
+  if pg_trigger_depth() > 1 then
+    return coalesce(new, old);
+  end if;
+  for v_partner_id in
+    select distinct spo.partner_id
+    from public.shop_part_offers spo
+    where spo.category_id = coalesce(new.id, old.id)
+  loop
+    perform public.refresh_partner_catalog_search(v_partner_id);
+  end loop;
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists partners_refresh_catalog_search_trg on public.partners;
+create trigger partners_refresh_catalog_search_trg
+after insert or update of name, address, district, description, city_id, google_types on public.partners
+for each row execute function public.trg_refresh_partner_catalog_search_from_partner();
+
+drop trigger if exists partner_services_refresh_catalog_search_trg on public.partner_services;
+create trigger partner_services_refresh_catalog_search_trg
+after insert or update or delete on public.partner_services
+for each row execute function public.trg_refresh_partner_catalog_search_from_linked_rows();
+
+drop trigger if exists shop_part_offers_refresh_catalog_search_trg on public.shop_part_offers;
+create trigger shop_part_offers_refresh_catalog_search_trg
+after insert or update or delete on public.shop_part_offers
+for each row execute function public.trg_refresh_partner_catalog_search_from_linked_rows();
+
+drop trigger if exists services_refresh_catalog_search_trg on public.services;
+create trigger services_refresh_catalog_search_trg
+after update of name_ua, keywords on public.services
+for each row execute function public.trg_refresh_partner_catalog_search_from_service();
+
+drop trigger if exists part_categories_refresh_catalog_search_trg on public.part_categories;
+create trigger part_categories_refresh_catalog_search_trg
+after update of name_ua on public.part_categories
+for each row execute function public.trg_refresh_partner_catalog_search_from_part_category();
+
+-- Backfill for existing rows (safe to rerun)
+update public.partners p
+set
+  search_text = coalesce(public.partner_catalog_search_text(p.id), ''),
+  search_tsv = to_tsvector('simple', coalesce(public.partner_catalog_search_text(p.id), ''))
+where true;
 
 create table if not exists public.requests (
   id uuid primary key default gen_random_uuid(),

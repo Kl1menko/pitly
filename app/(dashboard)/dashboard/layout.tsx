@@ -28,21 +28,40 @@ function extractAccessTokenFromCookies(cookieStore: Awaited<ReturnType<typeof co
   return "";
 }
 
+function extractRefreshTokenFromCookies(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  return decodeCookieValue(cookieStore.get("sb-refresh-token")?.value);
+}
+
 export default async function DashboardGroupLayout({ children }: { children: React.ReactNode }) {
   if (supabaseReady) {
     const cookieStore = await cookies();
     const demoCookie = cookieStore.get("pitly_demo")?.value;
     if (demoCookie !== "client" && demoCookie !== "partner") {
       const accessToken = extractAccessTokenFromCookies(cookieStore);
-      if (!accessToken) {
+      const refreshToken = extractRefreshTokenFromCookies(cookieStore);
+      if (!accessToken && !refreshToken) {
         redirect("/login");
       }
 
       const supabase = getSupabaseServerClient();
-      const { data, error } = await supabase.auth.getUser(accessToken);
-      if (error || !data.user) {
-        redirect("/login");
+      if (accessToken) {
+        const { data, error } = await supabase.auth.getUser(accessToken);
+        if (!error && data.user) {
+          return <DashboardLayout>{children}</DashboardLayout>;
+        }
       }
+
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+        if (!error && data.user) {
+          return <DashboardLayout>{children}</DashboardLayout>;
+        }
+      }
+
+      redirect("/login");
     }
   }
 

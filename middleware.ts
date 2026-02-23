@@ -29,15 +29,38 @@ function extractAccessToken(req: NextRequest) {
   return "";
 }
 
+function extractRefreshToken(req: NextRequest) {
+  return decodeCookieValue(req.cookies.get("sb-refresh-token")?.value);
+}
+
 async function hasValidSession(req: NextRequest) {
   const accessToken = extractAccessToken(req);
-  if (!accessToken || !supabaseUrl || !supabaseAnonKey) return false;
+  const refreshToken = extractRefreshToken(req);
+  if ((!accessToken && !refreshToken) || !supabaseUrl || !supabaseAnonKey) {
+    return { valid: false as const };
+  }
 
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   });
-  const { data, error } = await supabase.auth.getUser(accessToken);
-  return !error && Boolean(data.user);
+  if (accessToken) {
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (!error && data.user) {
+      return { valid: true as const };
+    }
+  }
+
+  if (accessToken && refreshToken) {
+    const { data, error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (!error && data.session?.access_token && data.session.refresh_token) {
+      return { valid: true as const, session: data.session };
+    }
+  }
+
+  return { valid: false as const };
 }
 
 function redirectToLogin(req: NextRequest) {
@@ -63,9 +86,25 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     }
 
-    const valid = await hasValidSession(req);
-    if (!valid) {
+    const sessionCheck = await hasValidSession(req);
+    if (!sessionCheck.valid) {
       return redirectToLogin(req);
+    }
+    if (sessionCheck.session) {
+      const res = NextResponse.next();
+      res.cookies.set("sb-access-token", encodeURIComponent(sessionCheck.session.access_token), {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+        secure: req.nextUrl.protocol === "https:"
+      });
+      res.cookies.set("sb-refresh-token", encodeURIComponent(sessionCheck.session.refresh_token), {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+        secure: req.nextUrl.protocol === "https:"
+      });
+      return res;
     }
   }
   return NextResponse.next();

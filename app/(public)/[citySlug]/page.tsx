@@ -7,7 +7,7 @@ import { PartnerCard } from "@/components/cards/partner-card";
 import { StoFilters } from "@/components/filters/partner-filters";
 import { ResultsPagination } from "@/components/shared/results-pagination";
 import { Card } from "@/components/ui/card";
-import { getBrands, getCityBySlug, getPartnersByCity, getServices } from "@/lib/supabase/queries";
+import { getBrands, getCityBySlug, getPartnersByCityPage, getServices } from "@/lib/supabase/queries";
 import { serviceCategories } from "@/lib/services/taxonomy";
 
 type Props = {
@@ -44,9 +44,11 @@ export default async function CityCatalogPage({ params, searchParams }: Props) {
   const primaryCategory =
     primaryService?.categoryId ? serviceCategories.find((c) => c.id === primaryService.categoryId) : category;
 
-  const partners = await getPartnersByCity({
+  const partnersPage = await getPartnersByCityPage({
     type: "sto",
     cityId: city.id,
+    page,
+    perPage,
     filters: {
       q: typeof searchParams.q === "string" ? searchParams.q : undefined,
       services: selectedServices,
@@ -61,9 +63,9 @@ export default async function CityCatalogPage({ params, searchParams }: Props) {
       sort: searchParams.sort === "rating" ? "rating" : undefined
     }
   });
-  const totalPages = Math.max(1, Math.ceil(partners.length / perPage));
-  const safePage = Math.min(page, totalPages);
-  const paginatedPartners = partners.slice((safePage - 1) * perPage, safePage * perPage);
+  const totalPages = Math.max(1, Math.ceil(partnersPage.total / perPage));
+  const safePage = partnersPage.page;
+  const paginatedPartners = partnersPage.items;
 
   const faq = [
     {
@@ -144,17 +146,17 @@ export default async function CityCatalogPage({ params, searchParams }: Props) {
 
       <Card className="bg-white/90 ring-1 ring-neutral-200">
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-          <p className="font-semibold text-neutral-900">Знайдено {partners.length} сервісів</p>
+          <p className="font-semibold text-neutral-900">Знайдено {partnersPage.total} сервісів</p>
           <p className="text-neutral-600">
-            {partners.length > 0
-              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partners.length)} з ${partners.length} • сторінка ${safePage} з ${totalPages}`
+            {partnersPage.total > 0
+              ? `${(safePage - 1) * perPage + 1}-${Math.min(safePage * perPage, partnersPage.total)} з ${partnersPage.total} • сторінка ${safePage} з ${totalPages}`
               : `Сторінка ${safePage} з ${totalPages}`}
           </p>
         </div>
       </Card>
 
       <div className="grid min-h-[240px] content-start gap-4 md:grid-cols-2">
-        {partners.length === 0 && (
+        {partnersPage.total === 0 && (
           <Card className="md:col-span-2 flex min-h-[220px] items-center justify-center border-dashed text-center bg-neutral-50/80">
             <div className="max-w-xl space-y-2">
               <p className="text-lg font-semibold text-neutral-900">Нічого не знайдено за цими фільтрами</p>

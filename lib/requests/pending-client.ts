@@ -109,12 +109,13 @@ export async function submitPendingRequestIfAny(): Promise<{ submitted: boolean;
   }
 
   const requestId = typeof data?.id === "string" ? data.id : undefined;
+  const requestProof = typeof data?.requestProof === "string" ? data.requestProof : undefined;
   const telegram = pending.values.contact_telegram?.trim();
   if (requestId && telegram) {
     await fetch("/api/request-link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ requestId, telegram })
+      body: JSON.stringify({ requestId, telegram, requestProof })
     }).catch(() => null);
   }
 

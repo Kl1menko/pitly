@@ -121,13 +121,14 @@ export function RequestPartsForm({
       if (values.contact_telegram) {
         await fetch("/api/request-link", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            requestId: data?.id,
-            telegram: values.contact_telegram
-          })
-        }).catch(() => null);
-      }
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                requestId: data?.id,
+                telegram: values.contact_telegram,
+                requestProof: data?.requestProof
+              })
+            }).catch(() => null);
+          }
 
       router.push("/thank-you");
     } catch (err) {
